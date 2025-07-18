@@ -1,0 +1,48 @@
+{% extends "base.html.jinja" %}
+{% set show_header = true %}
+
+{% block page_title %}Ingredients | Zestify{% endblock %}
+
+{% block extra_styles %}
+<style>
+    textarea {
+        width: 100%;
+        min-height: 200px;
+        font-size: 1.2em;
+        box-sizing: border-box;
+        resize: vertical;
+        background: #232323;
+        color: #e0e0e0;
+        border: 1px solid #444;
+    }
+</style>
+{% endblock %}
+
+{% block header_title %}Ingredients{% endblock %}
+
+{% block content %}
+
+{% if error %}
+<div class="error-message">{{ error }}</div>
+{% endif %}
+
+<form action="/results" method="post" id="recipeForm">
+    <textarea name="recipes_text" placeholder="Paste your ingredients here..." required></textarea>
+    <br>
+    <button type="submit">Process</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script defer>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('recipeForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const button = document.querySelector('button[type="submit"]');
+            button.disabled = true;
+            button.textContent = "Processing...";
+            this.submit();
+        });
+    });
+</script>
+{% endblock %}

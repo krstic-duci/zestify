@@ -1,0 +1,165 @@
+{% extends "base.html.jinja" %}
+{% set show_header = true %}
+
+{% block page_title %}Results | Zestify{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .ingredient-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 5px 0;
+        padding: 8px;
+        border: 1px solid #333;
+        border-radius: 4px;
+        background-color: #232323;
+        color: #e0e0e0;
+    }
+
+    .ingredient-text {
+        flex-grow: 1;
+    }
+
+    .copy-btn {
+        background-color: #388e3c;
+        color: #e0e0e0;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 10px;
+    }
+
+    .copy-btn:hover {
+        background-color: #2e7031;
+    }
+
+    .copy-btn:active {
+        background-color: #1b5e20;
+    }
+
+    .copied {
+        background-color: #1976d2 !important;
+    }
+
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    h3 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        color: #bdbdbd;
+    }
+
+    .back-link {
+        padding: 16px;
+        display: inline-block;
+    }
+
+    .back-link a {
+        color: #e0e0e0;
+        font-size: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block header_title %}Results{% endblock %}
+
+{% block content %}
+
+{{ data | safe }}
+
+<div class="back-link"><a href="/">Back</a></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Find all li elements
+        const listItems = document.querySelectorAll('li');
+
+        listItems.forEach(function (li) {
+            // Get the original text content
+            const originalText = li.textContent;
+
+            // Extract just the ingredient name (everything after quantity and unit)
+            const extractIngredientName = (text) => {
+                // Remove leading/trailing whitespace
+                const cleanText = text.trim();
+
+                // Use regex to match quantity + unit pattern at the beginning
+                // Covers: numbers (including decimals, fractions), followed by units
+                const quantityUnitPattern = /^[\d½¼¾.,]+\s*(g|kg|ml|l|st|dl|cl|tsk|msk|krm|stk|styck|gram|kilo|liter|matsked|tesked|krm|burk|påse|förpackning)\s+/i;
+
+                const match = cleanText.match(quantityUnitPattern);
+                if (match) {
+                    // Remove the matched quantity + unit from the beginning
+                    return cleanText.substring(match[0].length).trim();
+                }
+
+                // Fallback: if no pattern matches, try simple space splitting
+                const parts = cleanText.split(' ');
+                if (parts.length >= 3) {
+                    // Skip first two parts (likely quantity + unit)
+                    return parts.slice(2).join(' ');
+                } else if (parts.length === 2) {
+                    // If only 2 parts, take the second one
+                    return parts[1];
+                }
+
+                // Last resort: return original text
+                return cleanText;
+            };
+
+            const ingredientName = extractIngredientName(originalText);
+
+            // Create a wrapper div
+            const wrapper = document.createElement('div');
+            wrapper.className = 'ingredient-item';
+
+            // Create span for the text
+            const textSpan = document.createElement('span');
+            textSpan.className = 'ingredient-text';
+            textSpan.textContent = originalText;
+
+            // Create copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.textContent = 'Copy';
+
+            // Add click event to copy button
+            copyBtn.addEventListener('click', function () {
+                navigator.clipboard.writeText(ingredientName).then(function () {
+                    // Visual feedback
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+
+                    // Reset button after 1 second
+                    setTimeout(function () {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 1000);
+                }).catch(function (err) {
+                    console.error('Failed to copy text: ', err);
+                    copyBtn.textContent = 'Error';
+                    setTimeout(function () {
+                        copyBtn.textContent = 'Copy';
+                    }, 1000);
+                });
+            });
+
+            // Assemble the new structure
+            wrapper.appendChild(textSpan);
+            wrapper.appendChild(copyBtn);
+
+            // Replace the original li content
+            li.innerHTML = '';
+            li.appendChild(wrapper);
+        });
+    });
+</script>
+{% endblock %}

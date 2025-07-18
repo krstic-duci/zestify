@@ -1,0 +1,57 @@
+{% extends "base.html.jinja" %}
+
+{% block page_title %}Login | Zestify{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .login-container {
+        background: #232323;
+        color: #e0e0e0;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        width: 300px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .login-container h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #e0e0e0;
+    }
+    .login-container input {
+        flex: 1;
+        border: 1px solid #444;
+        background: #181818;
+        color: #e0e0e0;
+        padding: 10px;
+        border-radius: 4px;
+    }
+    .login-container input::placeholder {
+        color: #888;
+    }
+    .login-container button {
+        flex: 1;
+    }
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h1>Login</h1>
+    {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
+
+    <form action="/login" method="post">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+</div>
+{% endblock %}
