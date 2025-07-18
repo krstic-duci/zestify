@@ -103,6 +103,7 @@ async def results(
     request: Request,
     recipes_text: str = Form(..., min_length=10),
     _: str = Depends(get_current_user),
+    have_at_home: str | None = Form(None),
 ):
     """
     Handle the processing of recipes text input and generate categorized ingredients.
@@ -116,6 +117,10 @@ async def results(
         request (Request): The HTTP request object.
         recipes_text (str): The text input containing recipes, with a minimum length of
         10 characters.
+        _: str: The current user, obtained from the dependency injection.
+        have_at_home: (str | None): Optional text input for have at home items, which
+        can be used to filter out ingredients that are already available in the pantry
+        and/or fridge.
 
     Returns:
         HTMLResponse: A rendered HTML template displaying the categorized ingredients
@@ -130,7 +135,7 @@ async def results(
                     "error": "Please provide some recipes text.",
                 },
             )
-        processed_data = ingredient_service.process_recipes(recipes_text)
+        processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
 
         return templates.TemplateResponse(
             "results.html.jinja",

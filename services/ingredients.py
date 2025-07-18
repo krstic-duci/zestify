@@ -49,25 +49,38 @@ def extract_human_readable_response(
         return "An error occurred while processing the response."
 
 
-def create_ingredient_prompt(recipes_text: str) -> str:
-    """Create prompt for ingredient extraction"""
-    return f"""
-    Extract and aggregate ingredients from the recipes below. Translate to Swedish if
-    needed. Use metric system only. Group by: Meat/Fish, Vegetables/Fruits, Dairy,
-    Grains, Spices/Herbs, and Other.
+def create_ingredient_prompt(recipes_text: str, have_at_home: str | None = None) -> str:
+    """
+    Create optimized prompt for ingredient extraction with minimal text, maximum output.
+    """
+    have_at_home_section = (
+        f"\n\nEXCLUDE (already have):\n{have_at_home}"
+        if have_at_home and have_at_home.strip()
+        else ""
+    )
 
-    Format:
+    return f"""Extract & aggregate ALL ingredients. Swedish names. Metric only.
+    Categorize: Meat/Fish, Vegetables/Fruits, Dairy, Grains, Spices/Herbs, Other.
+    Skip basics (salt, pepper, oil).
+
+    Format (exact):
     <div>
-    <h3>Meat/Fish</h3>
-    <ul><li>500 g Sej</li></ul>
-    <h3>Vegetables/Fruits</h3>
-    <ul><li>2 st Lime</li></ul>
-    <h3>Pantry Items</h3>
-    <ul><li>100 g Majonnäs</li></ul>
+        <h3>Meat/Fish</h3>
+        <ul><li>500 g kött</li><li>300 g fisk</li></ul>
+        <h3>Vegetables/Fruits</h3>
+        <ul><li>2 st lök</li><li>400 g morötter</li></ul>
+        <h3>Dairy</h3>
+        <ul><li>250 ml mjölk</li></ul>
+        <h3>Grains</h3>
+        <ul><li>200 g ris</li></ul>
+        <h3>Spices/Herbs</h3>
+        <ul><li>1 tsk paprika</li></ul>
+        <h3>Other</h3>
+        <ul><li>100 g majonnäs</li></ul>
     </div>
 
-    Recipes:
-    {recipes_text}
+    RECIPES:
+    {recipes_text}{have_at_home_section}
     """
 
 
@@ -75,7 +88,9 @@ class IngredientService:
     _client = client
     _cleaner = cleaner
 
-    def process_recipes(self, recipes_text: str) -> str:
+    def process_recipes(
+        self, recipes_text: str, have_at_home: str | None = None
+    ) -> str:
         """
         Process recipes and return sanitized HTML
         This method takes the recipes text input, creates a prompt for the Gemini API,
@@ -83,13 +98,16 @@ class IngredientService:
 
         Args:
             recipes_text: The raw recipes text to process
+            have_at_home: Optional string of items the user already has at home,
+                          used to filter out those ingredients.
 
         Returns:
             str: Sanitized HTML containing categorized ingredients
         """
 
         model_response: GenerateContentResponse = self._client.models.generate_content(
-            model=LLM_MODEL, contents=create_ingredient_prompt(recipes_text)
+            model=LLM_MODEL,
+            contents=create_ingredient_prompt(recipes_text, have_at_home),
         )
 
         raw_response = extract_human_readable_response(model_response)
