@@ -135,7 +135,6 @@ async def results(
                     "error": "Please provide some recipes text.",
                 },
             )
-        print(have_at_home)
         processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
 
         return templates.TemplateResponse(
