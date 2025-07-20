@@ -33,6 +33,8 @@ GEMINI_API_KEY: str = get_required_env("GEMINI_API_KEY")
 USERNAME: str = get_required_env("APP_USERNAME")
 HASHED_PASS: str = get_required_env("APP_PASSWORD")
 AUTH_TOKEN_KEY: str = get_required_env("AUTH_TOKEN_KEY")
+SUPABASE_URL: str = get_required_env("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY: str = get_required_env("SUPABASE_SERVICE_ROLE_KEY")
 
 
 class Settings(BaseSettings):
@@ -42,6 +44,8 @@ class Settings(BaseSettings):
     auth_token_key: str = AUTH_TOKEN_KEY
     max_age: int = COOKIE_MAX_AGE
     allowed_tags: list[str] = ALLOWED_TAGS
+    supabase_url: str = SUPABASE_URL
+    supabase_service_role_key: str = SUPABASE_SERVICE_ROLE_KEY
 
 
 settings = Settings()

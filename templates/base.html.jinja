@@ -7,76 +7,267 @@
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <title>{% block page_title %}Zestify{% endblock %}</title>
     <style>
+        :root {
+            --primary-bg: #0d1117;
+            --card-bg: #161b22;
+            --surface-bg: #21262d;
+            --elevated-bg: #30363d;
+            --hover-bg: #373e47;
+            --border-color: #484f58;
+            --text-primary: #f0f6fc;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-blue: #58a6ff;
+            --accent-green: #56d364;
+            --accent-orange: #f0883e;
+            --danger: #f85149;
+            --warning: #d29922;
+            --success: #238636;
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 0.75rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-xxl: 3rem;
+            --border-radius-sm: 0.375rem;
+            --border-radius: 0.75rem;
+            --border-radius-lg: 1rem;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-md: 1.125rem;
+            --font-size-lg: 1.25rem;
+            --font-size-xl: 1.5rem;
+            --font-size-xxl: 2rem;
+            --font-size-xxxl: 2.5rem;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         html,
         body {
             height: 100%;
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            font-size: var(--font-size-base);
         }
 
         body {
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            background-color: #121212;
-            color: #e0e0e0;
+            min-height: 100vh;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         main {
-            padding: 16px;
-            height: 100vh;
-            width: calc(100vw - 32px);
+            flex: 1;
+            padding: var(--spacing-md);
+            max-width: 100rem;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin: 0;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: var(--font-size-xxl);
+        }
+
+        h2 {
+            font-size: var(--font-size-xl);
+        }
+
+        h3 {
+            font-size: var(--font-size-lg);
+        }
+
+        h4 {
+            font-size: var(--font-size-md);
         }
 
         button {
-            background-color: #388e3c;
-            color: #e0e0e0;
-            padding: 10px 20px;
+            background-color: var(--accent-green);
+            color: var(--text-primary);
+            padding: var(--spacing-sm) var(--spacing-lg);
             border: none;
-            border-radius: 5px;
+            border-radius: var(--border-radius-sm);
             cursor: pointer;
-            font-size: 1em;
+            font-size: var(--font-size-base);
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 2.5rem;
         }
 
         button:hover {
-            background-color: #2e7031;
+            background-color: var(--success);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         button:disabled {
-            background-color: #333;
+            background-color: var(--elevated-bg);
+            color: var(--text-muted);
             cursor: not-allowed;
+            transform: none;
+        }
+
+        input,
+        textarea {
+            background: var(--surface-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-sm);
+            font-size: var(--font-size-base);
+            font-family: inherit;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        a:hover {
+            color: var(--text-primary);
+            text-decoration: underline;
         }
 
         .error-message {
-            color: #ff5252;
-            margin-bottom: 10px;
+            color: var(--danger);
+            background-color: rgba(248, 81, 73, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            margin-bottom: var(--spacing-md);
             text-align: center;
-            padding: 10px;
-            background-color: #2d2d2d;
-            border: 1px solid #ff5252;
-            border-radius: 4px;
+            font-size: var(--font-size-sm);
         }
 
         .logout-link {
-            background-color: #b71c1c;
-            color: #e0e0e0;
-            padding: 8px 16px;
+            background-color: var(--danger);
+            color: var(--text-primary);
+            padding: var(--spacing-xs) var(--spacing-md);
             text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
+            border-radius: var(--border-radius-sm);
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
         }
 
         .logout-link:hover {
-            background-color: #7f0000;
+            background-color: #d73a49;
+            transform: translateY(-1px);
+            text-decoration: none;
         }
 
         .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: var(--spacing-xl);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-bar h1 {
+            color: var(--accent-blue);
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .feature-hint {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-md);
+            margin-top: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .feature-hint h3 {
+            color: var(--accent-orange);
+            margin-bottom: var(--spacing-sm);
+            font-size: var(--font-size-lg);
+        }
+
+        .feature-hint p {
+            color: var(--text-secondary);
+            margin: 0;
+            font-size: var(--font-size-sm);
+        }
+
+        @media (max-width: 768px) {
+            main {
+                padding: var(--spacing-sm);
+            }
+
+            .header-bar {
+                flex-direction: column;
+                gap: var(--spacing-md);
+                align-items: flex-start;
+            }
+
+            .header-bar h1 {
+                font-size: var(--font-size-lg);
+            }
+        }
+
+        @media (pointer: coarse) {
+            button {
+                min-height: 3rem;
+                padding: var(--spacing-md) var(--spacing-lg);
+            }
+
+            input,
+            textarea {
+                min-height: 3rem;
+                padding: var(--spacing-md);
+            }
         }
     </style>
     {% block extra_styles %}{% endblock %}

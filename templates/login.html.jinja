@@ -4,54 +4,237 @@
 
 {% block extra_styles %}
 <style>
+    .login-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: var(--spacing-lg);
+    }
+
     .login-container {
-        background: #232323;
-        color: #e0e0e0;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
-        width: 300px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+        padding: var(--spacing-xxl);
+        width: 100%;
+        max-width: 34rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-container::before {
+        content: '';
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-green), var(--accent-orange));
     }
-    .login-container h1 {
+
+    .login-header {
         text-align: center;
-        margin-bottom: 20px;
-        color: #e0e0e0;
+        margin-bottom: var(--spacing-xl);
     }
-    .login-container input {
-        flex: 1;
-        border: 1px solid #444;
-        background: #181818;
-        color: #e0e0e0;
-        padding: 10px;
-        border-radius: 4px;
+
+    .login-header h1 {
+        color: var(--text-primary);
+        font-size: var(--font-size-xxl);
+        font-weight: 700;
+        margin-bottom: var(--spacing-xs);
+        letter-spacing: -0.025em;
     }
-    .login-container input::placeholder {
-        color: #888;
+
+    .login-header .subtitle {
+        color: var(--text-secondary);
+        font-size: var(--font-size-base);
+        margin: 0;
     }
-    .login-container button {
-        flex: 1;
-    }
-    form {
+
+    .login-form {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: var(--spacing-lg);
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .form-label {
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .login-input {
+        background: var(--surface-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: var(--spacing-md);
+        font-size: var(--font-size-base);
+        color: var(--text-primary);
+        transition: var(--transition);
+        min-height: 3rem;
+    }
+
+    .login-input:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        background: var(--elevated-bg);
+    }
+
+    .login-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .login-button {
+        background: linear-gradient(135deg, var(--accent-blue), #4c94ff);
+        color: var(--text-primary);
+        border: none;
+        border-radius: var(--border-radius-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        min-height: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .login-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 25px rgba(88, 166, 255, 0.3);
+    }
+
+    .login-button:hover::before {
+        left: 100%;
+    }
+
+    .login-button:active {
+        transform: translateY(0);
+    }
+
+    .login-button:disabled {
+        background: var(--elevated-bg);
+        color: var(--text-muted);
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .login-button:disabled::before {
+        display: none;
+    }
+
+    .brand-icon {
+        font-size: var(--font-size-xxxl);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .error-message {
+        color: var(--danger);
+        margin-bottom: 1rem;
+        opacity: 1;
+        transition: opacity 0.5s ease;
+    }
+
+    @media (max-width: 768px) {
+        .login-wrapper {
+            padding: var(--spacing-md);
+            align-items: flex-start;
+            padding-top: 10vh;
+        }
+
+        .login-container {
+            padding: var(--spacing-xl);
+        }
+
+        .login-header h1 {
+            font-size: var(--font-size-xl);
+        }
+    }
+
+    @media (pointer: coarse) {
+        .login-input,
+        .login-button {
+            min-height: 3.5rem;
+            padding: var(--spacing-lg);
+        }
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .login-container {
+            box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <h1>Login</h1>
-    {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
+<div class="login-wrapper">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="brand-icon">🍳</div>
+            <h1>Zestify</h1>
+            <p class="subtitle">Welcome back! Please sign in to continue.</p>
+        </div>
 
-    <form action="/login" method="post">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-    </form>
+        {% if request.query_params.get('error') %}
+            <div class="error-message">{{ request.query_params.get('error') }}</div>
+        {% endif %}
+
+        <form action="/login" method="post" class="login-form">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required
+                    class="login-input" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required
+                    class="login-input" autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-button">
+                Sign In
+            </button>
+        </form>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Remove query parameters after displaying the error
+        const url = new URL(window.location.href);
+        url.searchParams.delete('error');
+        window.history.replaceState({}, document.title, url.pathname);
+
+        const errorMessageDiv = document.querySelector('.error-message');
+        if (errorMessageDiv) {
+            setTimeout(() => {
+                errorMessageDiv.style.opacity = '0';
+                setTimeout(() => errorMessageDiv.remove(), 500);
+            }, 5000);
+        }
+    });
+</script>
 {% endblock %}

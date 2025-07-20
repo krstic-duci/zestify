@@ -5,64 +5,284 @@
 
 {% block extra_styles %}
 <style>
+    .results-container {
+        max-width: 80rem;
+        margin: 0 auto;
+    }
+
+    .results-content {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        margin-bottom: var(--spacing-xl);
+    }
+
     .ingredient-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: 5px 0;
-        padding: 8px;
-        border: 1px solid #333;
-        border-radius: 4px;
-        background-color: #232323;
-        color: #e0e0e0;
+        margin: var(--spacing-xs) 0;
+        padding: var(--spacing-md);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        background-color: var(--surface-bg);
+        color: var(--text-primary);
+        transition: var(--transition);
+        min-height: 3rem;
+    }
+
+    .ingredient-item:hover {
+        background-color: var(--elevated-bg);
+        border-color: var(--accent-blue);
+        transform: translateY(-1px);
+    }
+
+    .ingredient-item.item-copied {
+        background-color: rgba(88, 166, 255, 0.05);
+        border-color: rgba(88, 166, 255, 0.3);
+    }
+
+    .ingredient-item.item-copied:hover {
+        background-color: rgba(88, 166, 255, 0.1);
     }
 
     .ingredient-text {
         flex-grow: 1;
+        font-size: var(--font-size-base);
+        font-weight: 400;
+        line-height: 1.4;
+        word-break: break-word;
     }
 
     .copy-btn {
-        background-color: #388e3c;
-        color: #e0e0e0;
+        background-color: var(--accent-green);
+        color: var(--text-primary);
         border: none;
-        padding: 4px 8px;
-        border-radius: 3px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--border-radius-sm);
         cursor: pointer;
-        font-size: 12px;
-        margin-left: 10px;
+        font-size: var(--font-size-xs);
+        font-weight: 500;
+        margin-left: var(--spacing-md);
+        transition: var(--transition);
+        min-width: 4rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .copy-btn:hover {
-        background-color: #2e7031;
+        background-color: var(--success);
+        transform: translateY(-1px);
     }
 
     .copy-btn:active {
-        background-color: #1b5e20;
+        transform: translateY(0);
     }
 
-    .copied {
-        background-color: #1976d2 !important;
+    .copy-btn.copied {
+        background-color: var(--accent-blue) !important;
+        animation: pulse 0.3s ease;
+    }
+
+    .copy-btn.undo-btn {
+        background-color: #ff6b6b;
+        min-width: 4.5rem;
+    }
+
+    .copy-btn.undo-btn:hover {
+        background-color: #ff5252;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
 
     ul {
         list-style: none;
         padding: 0;
+        margin: 0;
+    }
+
+    li {
+        margin: 0;
+        padding: 0;
     }
 
     h3 {
-        margin-top: 20px;
-        margin-bottom: 10px;
-        color: #bdbdbd;
+        margin: var(--spacing-xl) 0 var(--spacing-md) 0;
+        color: var(--accent-blue);
+        font-size: var(--font-size-lg);
+        font-weight: 600;
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 2px solid var(--border-color);
+        letter-spacing: -0.015em;
+    }
+
+    h3:first-child {
+        margin-top: 0;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .section-icon {
+        font-size: var(--font-size-lg);
+    }
+
+    .navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-xl);
+    }
+
+    .back-link,
+    .weekly-link {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        text-decoration: none;
+        border-radius: var(--border-radius-sm);
+        font-size: var(--font-size-base);
+        font-weight: 500;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        min-height: 2.5rem;
     }
 
     .back-link {
-        padding: 16px;
-        display: inline-block;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        background: transparent;
     }
 
-    .back-link a {
-        color: #e0e0e0;
-        font-size: 16px;
+    .back-link:hover {
+        color: var(--text-primary);
+        border-color: var(--accent-blue);
+        background: rgba(88, 166, 255, 0.1);
+        text-decoration: none;
+    }
+
+    .weekly-link {
+        background: var(--accent-blue);
+        color: var(--text-primary);
+    }
+
+    .weekly-link:hover {
+        background: #4c94ff;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    .stats-bar {
+        background: var(--surface-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-xl);
+        text-align: center;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .stat-number {
+        font-size: var(--font-size-xl);
+        font-weight: 700;
+        color: var(--accent-green);
+    }
+
+    .stat-label {
+        font-size: var(--font-size-sm);
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-xxl);
+        color: var(--text-secondary);
+    }
+
+    .empty-state .icon {
+        font-size: var(--font-size-xxxl);
+        margin-bottom: var(--spacing-md);
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .results-content {
+            padding: var(--spacing-lg);
+        }
+
+        .navigation {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .back-link,
+        .weekly-link {
+            justify-content: center;
+        }
+
+        .stats-bar {
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .ingredient-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--spacing-sm);
+        }
+
+        .copy-btn {
+            align-self: flex-end;
+            margin-left: 0;
+        }
+    }
+    @media (pointer: coarse) {
+        .ingredient-item {
+            min-height: 3.5rem;
+            padding: var(--spacing-lg);
+        }
+
+        .copy-btn {
+            min-width: 5rem;
+            height: 2.5rem;
+            font-size: var(--font-size-sm);
+        }
+
+        .back-link,
+        .weekly-link {
+            min-height: 3rem;
+            padding: var(--spacing-md) var(--spacing-xl);
+        }
     }
 </style>
 {% endblock %}
@@ -70,96 +290,169 @@
 {% block header_title %}Results{% endblock %}
 
 {% block content %}
+<div class="results-container">
+    <div class="results-content">
+        <div class="section-header">
+            <span class="section-icon">🛒</span>
+            <h2>Shopping List</h2>
+        </div>
 
-{{ data | safe }}
+        <div class="stats-bar" id="statsBar" style="display: none;">
+            <div class="stat-item">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="copiedItems">0</div>
+                <div class="stat-label">Copied</div>
+            </div>
+        </div>
 
-<div class="back-link"><a href="/">Back</a></div>
+        <div id="resultsContent">
+            {{ data | safe }}
+        </div>
+    </div>
+
+    <div class="navigation">
+        <a href="/" class="back-link">← Back to Ingredients</a>
+        <a href="/weekly" class="weekly-link">📅 Weekly Plan →</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Find all li elements
+        let copiedCount = 0;
         const listItems = document.querySelectorAll('li');
+        const totalItemsEl = document.getElementById('totalItems');
+        const copiedItemsEl = document.getElementById('copiedItems');
+        const statsBar = document.getElementById('statsBar');
 
-        listItems.forEach(function (li) {
-            // Get the original text content
-            const originalText = li.textContent;
+        if (listItems.length > 0) {
+            // Show stats bar
+            statsBar.style.display = 'flex';
+            totalItemsEl.textContent = listItems.length;
 
-            // Extract just the ingredient name (everything after quantity and unit)
-            const extractIngredientName = (text) => {
-                // Remove leading/trailing whitespace
-                const cleanText = text.trim();
+            listItems.forEach(function (li) {
+                const originalText = li.textContent;
 
-                // Use regex to match quantity + unit pattern at the beginning
-                // Covers: numbers (including decimals, fractions), followed by units
-                const quantityUnitPattern = /^[\d½¼¾.,]+\s*(g|kg|ml|l|st|dl|cl|tsk|msk|krm|stk|styck|gram|kilo|liter|matsked|tesked|krm|burk|påse|förpackning)\s+/i;
+                // Extract ingredient name
+                const extractIngredientName = (text) => {
+                    const cleanText = text.trim();
 
-                const match = cleanText.match(quantityUnitPattern);
-                if (match) {
-                    // Remove the matched quantity + unit from the beginning
-                    return cleanText.substring(match[0].length).trim();
-                }
+                    // Swedish quantity patterns
+                    const quantityUnitPattern = /^[\d½¼¾.,]+\s*(g|kg|ml|l|st|dl|cl|tsk|msk|krm|stk|styck|gram|kilo|liter|matsked|tesked|krm|burk|påse|förpackning)\s+/i;
 
-                // Fallback: if no pattern matches, try simple space splitting
-                const parts = cleanText.split(' ');
-                if (parts.length >= 3) {
-                    // Skip first two parts (likely quantity + unit)
-                    return parts.slice(2).join(' ');
-                } else if (parts.length === 2) {
-                    // If only 2 parts, take the second one
-                    return parts[1];
-                }
+                    const match = cleanText.match(quantityUnitPattern);
+                    if (match) {
+                        return cleanText.substring(match[0].length).trim();
+                    }
 
-                // Last resort: return original text
-                return cleanText;
-            };
+                    // Fallback patterns
+                    const parts = cleanText.split(' ');
+                    if (parts.length >= 3) {
+                        return parts.slice(2).join(' ');
+                    } else if (parts.length === 2) {
+                        return parts[1];
+                    }
 
-            const ingredientName = extractIngredientName(originalText);
+                    return cleanText;
+                };
 
-            // Create a wrapper div
-            const wrapper = document.createElement('div');
-            wrapper.className = 'ingredient-item';
+                const ingredientName = extractIngredientName(originalText);
 
-            // Create span for the text
-            const textSpan = document.createElement('span');
-            textSpan.className = 'ingredient-text';
-            textSpan.textContent = originalText;
+                // Create enhanced structure
+                const wrapper = document.createElement('div');
+                wrapper.className = 'ingredient-item';
 
-            // Create copy button
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.textContent = 'Copy';
+                const textSpan = document.createElement('span');
+                textSpan.className = 'ingredient-text';
+                textSpan.textContent = originalText;
 
-            // Add click event to copy button
-            copyBtn.addEventListener('click', function () {
-                navigator.clipboard.writeText(ingredientName).then(function () {
-                    // Visual feedback
-                    copyBtn.textContent = 'Copied!';
-                    copyBtn.classList.add('copied');
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'copy-btn';
+                copyBtn.textContent = '📋 Copy';
+                copyBtn.setAttribute('aria-label', `Copy ${ingredientName}`);
 
-                    // Reset button after 1 second
-                    setTimeout(function () {
-                        copyBtn.textContent = 'Copy';
-                        copyBtn.classList.remove('copied');
-                    }, 1000);
-                }).catch(function (err) {
-                    console.error('Failed to copy text: ', err);
-                    copyBtn.textContent = 'Error';
-                    setTimeout(function () {
-                        copyBtn.textContent = 'Copy';
-                    }, 1000);
+                // Enhanced copy functionality
+                copyBtn.addEventListener('click', function () {
+                    navigator.clipboard.writeText(ingredientName).then(function () {
+                        // Check if already copied to toggle behavior
+                        const isAlreadyCopied = wrapper.dataset.copied === 'true';
+                        
+                        if (!isAlreadyCopied) {
+                            // First time copying - mark as copied
+                            copyBtn.textContent = '✓ Copied!';
+                            copyBtn.classList.add('copied');
+                            
+                            // Add strikethrough to the text
+                            textSpan.style.textDecoration = 'line-through';
+                            textSpan.style.opacity = '0.6';
+                            textSpan.style.color = 'var(--text-secondary)';
+                            
+                            // Mark wrapper as copied
+                            wrapper.dataset.copied = 'true';
+                            wrapper.classList.add('item-copied');
+                            
+                            // Update stats
+                            copiedCount++;
+                            copiedItemsEl.textContent = copiedCount;
+                            
+                            // Change button to "Undo" after animation
+                            setTimeout(function () {
+                                copyBtn.textContent = '↩️ Undo';
+                                copyBtn.classList.remove('copied');
+                                copyBtn.classList.add('undo-btn');
+                            }, 1500);
+                            
+                        } else {
+                            // Already copied - toggle undo
+                            copyBtn.textContent = '📋 Copy';
+                            copyBtn.classList.remove('undo-btn');
+                            
+                            // Remove strikethrough
+                            textSpan.style.textDecoration = 'none';
+                            textSpan.style.opacity = '1';
+                            textSpan.style.color = 'var(--text-primary)';
+                            
+                            // Mark as not copied
+                            wrapper.dataset.copied = 'false';
+                            wrapper.classList.remove('item-copied');
+                            
+                            // Update stats
+                            copiedCount--;
+                            copiedItemsEl.textContent = copiedCount;
+                        }
+                        
+                    }).catch(function (err) {
+                        console.error('Failed to copy text: ', err);
+                        copyBtn.textContent = '❌ Error';
+                        setTimeout(function () {
+                            copyBtn.textContent = '📋 Copy';
+                        }, 1500);
+                    });
                 });
+
+                // Assemble structure
+                wrapper.appendChild(textSpan);
+                wrapper.appendChild(copyBtn);
+
+                // Replace original content
+                li.innerHTML = '';
+                li.appendChild(wrapper);
             });
-
-            // Assemble the new structure
-            wrapper.appendChild(textSpan);
-            wrapper.appendChild(copyBtn);
-
-            // Replace the original li content
-            li.innerHTML = '';
-            li.appendChild(wrapper);
-        });
+        } else {
+            // Show empty state
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <div class="icon">📝</div>
+                <h3>No ingredients processed yet</h3>
+                <p>Go back and add some ingredients to see your shopping list here.</p>
+            `;
+            document.getElementById('resultsContent').appendChild(emptyState);
+        }
     });
 </script>
 {% endblock %}
