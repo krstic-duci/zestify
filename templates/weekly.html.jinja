@@ -1,0 +1,469 @@
+{% extends "base.html.jinja" %}
+{% set show_header = true %}
+
+{% block page_title %}Weekly plan | Zestify{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .weekly-container {
+        max-width: 90rem;
+        margin: 0 auto;
+    }
+
+    .weekly-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+        gap: var(--spacing-lg);
+        padding: var(--spacing-xl) 0;
+    }
+
+    .day-card {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-lg);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-height: 16rem;
+    }
+
+    .day-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .day-card h3 {
+        color: var(--accent-blue);
+        font-size: var(--font-size-xl);
+        font-weight: 600;
+        margin: 0 0 var(--spacing-lg) 0;
+        text-align: center;
+        letter-spacing: -0.025em;
+    }
+
+    .meal-section {
+        background: var(--surface-bg);
+        border-radius: calc(var(--border-radius) * 0.6);
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border: 1px solid var(--border-color);
+        min-height: 4.5rem;
+        transition: var(--transition);
+    }
+
+    .meal-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .meal-section:hover {
+        border-color: var(--accent-blue);
+    }
+
+    .meal-section h4 {
+        color: var(--accent-green);
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        margin: 0 0 var(--spacing-sm) 0;
+        text-align: center;
+        letter-spacing: -0.015em;
+    }
+
+    .recipe-item {
+        display: block;
+        margin: var(--spacing-xs) 0;
+        padding: var(--spacing-md);
+        border-radius: calc(var(--border-radius) * 0.5);
+        background: var(--elevated-bg);
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: var(--font-size-base);
+        font-weight: 500;
+        line-height: 1.4;
+        transition: var(--transition);
+        position: relative;
+        border: 1px solid transparent;
+        min-height: 3rem;
+        display: flex;
+        align-items: center;
+        word-break: break-word;
+        hyphens: auto;
+    }
+
+    .recipe-item:not(.no-recipe) {
+        cursor: grab;
+        padding-left: 3rem;
+    }
+
+    .recipe-item:not(.no-recipe):active {
+        cursor: grabbing;
+    }
+
+    .recipe-item:not(.no-recipe):hover {
+        background: var(--hover-bg);
+        border-color: var(--accent-blue);
+        transform: translateY(-1px);
+        color: var(--text-primary);
+        text-decoration: none;
+    }
+
+    .recipe-item:not(.no-recipe)::before {
+        content: "⋯⋯";
+        position: absolute;
+        left: var(--spacing-sm);
+        top: 50%;
+        transform: translateY(-50%) rotate(90deg);
+        color: var(--text-secondary);
+        font-size: var(--font-size-md);
+        font-weight: bold;
+        line-height: 1;
+        transition: color 0.2s ease;
+    }
+
+    .recipe-item:not(.no-recipe):hover::before {
+        color: var(--accent-blue);
+    }
+
+    .no-recipe {
+        background: transparent !important;
+        border: 2px dashed var(--border-color) !important;
+        color: var(--text-secondary);
+        font-style: italic;
+        cursor: default;
+        text-align: center;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+    }
+
+    .no-recipe:hover {
+        border-color: var(--accent-blue) !important;
+        background: rgba(88, 166, 255, 0.05) !important;
+    }
+
+    .navigation {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: var(--spacing-xl);
+        gap: var(--spacing-md);
+    }
+
+    .back-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: var(--font-size-base);
+        font-weight: 500;
+        padding: var(--spacing-sm) var(--spacing-lg);
+        border-radius: calc(var(--border-radius) * 0.5);
+        border: 1px solid var(--border-color);
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .back-link:hover {
+        color: var(--accent-blue);
+        border-color: var(--accent-blue);
+        background: rgba(88, 166, 255, 0.1);
+        text-decoration: none;
+    }
+
+    .sortable-ghost {
+        opacity: 0.3;
+        background: var(--accent-blue) !important;
+        transform: rotate(3deg);
+    }
+
+    .sortable-chosen {
+        transform: scale(1.02);
+        box-shadow: 0 8px 32px rgba(88, 166, 255, 0.3);
+        border-color: var(--accent-blue) !important;
+    }
+
+    .sortable-drag {
+        transform: rotate(2deg) scale(1.05);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+    }
+
+    @media (max-width: 1024px) {
+        .weekly-grid {
+            grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+            gap: var(--spacing-md);
+            padding: var(--spacing-lg) 0;
+        }
+
+        .day-card {
+            padding: var(--spacing-md);
+        }
+
+        .recipe-item {
+            min-height: 3.5rem;
+            font-size: var(--font-size-md);
+        }
+
+        .meal-section h4 {
+            font-size: var(--font-size-lg);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .weekly-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md) 0;
+        }
+
+        .recipe-item {
+            min-height: 4rem;
+        }
+
+        .navigation {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .back-link {
+            justify-content: center;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .recipe-item {
+            min-height: 4rem;
+            font-size: var(--font-size-md);
+        }
+
+        .recipe-item:not(.no-recipe)::before {
+            font-size: var(--font-size-lg);
+            left: var(--spacing-md);
+        }
+
+        .recipe-item:not(.no-recipe) {
+            padding-left: 3.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block header_title %}Weekly plan{% endblock %}
+
+{% block content %}
+<div>Work in progress</div>
+<!-- <div class="weekly-container">
+    <div class="weekly-grid" id="weekly-grid">
+        {% set days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
+        {% for day in days_order %}
+        <div class="day-card" data-day="{{ day }}">
+            <h3>{{ day }}</h3>
+
+            <div class="meal-section sortable-meal" data-meal="Lunch">
+                <h4>🍽️ Lunch</h4>
+                {% if day in data and "Lunch" in data[day] %}
+                {% for item in data[day]["Lunch"] %}
+                {% if item.link == "No recipe available" %}
+                <span class="no-recipe recipe-item" data-id="{{ item.get('id', 'placeholder') }}"
+                    data-position="{{ item.get('position', 0) }}" data-day="{{ day }}" data-meal="Lunch">
+                    {{ item.link }}
+                </span>
+                {% else %}
+                <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer" class="recipe-item"
+                    data-id="{{ item.get('id', 'unknown') }}" data-position="{{ item.get('position', 0) }}"
+                    data-day="{{ day }}" data-meal="Lunch">
+                    {{ item.link }}
+                </a>
+                {% endif %}
+                {% endfor %}
+                {% else %}
+                <span class="no-recipe recipe-item" data-id="placeholder-{{ day }}-Lunch" data-position="999"
+                    data-day="{{ day }}" data-meal="Lunch">
+                    No recipe available
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="meal-section sortable-meal" data-meal="Dinner">
+                <h4>🍴 Dinner</h4>
+                {% if day in data and "Dinner" in data[day] %}
+                {% for item in data[day]["Dinner"] %}
+                {% if item.link == "No recipe available" %}
+                <span class="no-recipe recipe-item" data-id="{{ item.get('id', 'placeholder') }}"
+                    data-position="{{ item.get('position', 0) }}" data-day="{{ day }}" data-meal="Dinner">
+                    {{ item.link }}
+                </span>
+                {% else %}
+                <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer" class="recipe-item"
+                    data-id="{{ item.get('id', 'unknown') }}" data-position="{{ item.get('position', 0) }}"
+                    data-day="{{ day }}" data-meal="Dinner">
+                    {{ item.link }}
+                </a>
+                {% endif %}
+                {% endfor %}
+                {% else %}
+                <span class="no-recipe recipe-item" data-id="placeholder-{{ day }}-Dinner" data-position="999"
+                    data-day="{{ day }}" data-meal="Dinner">
+                    No recipe available
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="feature-hint">
+        <h3>💡 Pro Tip</h3>
+        <p>Drag and drop recipes to rearrange your weekly plan. Click on the recipe title to open it in a new tab.</p>
+    </div>
+
+    <div class="navigation">
+        <a href="/" class="back-link">← Back to Home</a>
+    </div>
+</div> -->
+{% endblock %}
+
+<!-- {% block scripts %}
+<script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Make each meal section sortable
+        const mealSections = document.querySelectorAll('.sortable-meal');
+
+        mealSections.forEach(section => {
+            Sortable.create(section, {
+                group: 'recipes',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                filter: 'h4, .no-recipe', // Don't drag the meal title or placeholder items
+                onEnd: function (evt) {
+                    handleRecipeSwap(evt);
+                }
+            });
+        });
+
+        function handleRecipeSwap(evt) {
+            const draggedItem = evt.item;
+            const fromContainer = evt.from;
+            const toContainer = evt.to;
+
+            // If dropping in the same container, do nothing
+            if (fromContainer === toContainer) {
+                return;
+            }
+
+            // Get all non-placeholder items in the target container
+            const targetItems = Array.from(toContainer.querySelectorAll('.recipe-item')).filter(item =>
+                !item.dataset.id.startsWith('placeholder-') && item !== draggedItem
+            );
+
+            // If target container has a real recipe, we need to swap
+            if (targetItems.length > 0) {
+                const existingItem = targetItems[0];
+
+                // Move the existing item to the source container
+                fromContainer.appendChild(existingItem);
+
+                // Update the existing item's data attributes
+                const fromDay = fromContainer.closest('.day-card').dataset.day;
+                const fromMeal = fromContainer.dataset.meal;
+                existingItem.dataset.day = fromDay;
+                existingItem.dataset.meal = fromMeal;
+            }
+
+            // Update the dragged item's data attributes
+            const toDay = toContainer.closest('.day-card').dataset.day;
+            const toMeal = toContainer.dataset.meal;
+            draggedItem.dataset.day = toDay;
+            draggedItem.dataset.meal = toMeal;
+
+            // Remove any placeholder items from containers that now have real recipes
+            removeePlaceholders(fromContainer);
+            removeePlaceholders(toContainer);
+
+            // Add placeholders to empty containers
+            addPlaceholderIfEmpty(fromContainer);
+            addPlaceholderIfEmpty(toContainer);
+
+            // Update positions in database
+            updateAllPositions();
+        }
+
+        function removeePlaceholders(container) {
+            const placeholders = container.querySelectorAll('[data-id^="placeholder-"]');
+            placeholders.forEach(placeholder => {
+                if (container.querySelectorAll('.recipe-item:not([data-id^="placeholder-"])').length > 0) {
+                    placeholder.remove();
+                }
+            });
+        }
+
+        function addPlaceholderIfEmpty(container) {
+            const realItems = container.querySelectorAll('.recipe-item:not([data-id^="placeholder-"])');
+            if (realItems.length === 0) {
+                const day = container.closest('.day-card').dataset.day;
+                const meal = container.dataset.meal;
+
+                const placeholder = document.createElement('span');
+                placeholder.className = 'no-recipe recipe-item';
+                placeholder.dataset.id = `placeholder-${day}-${meal}`;
+                placeholder.dataset.position = '999';
+                placeholder.dataset.day = day;
+                placeholder.dataset.meal = meal;
+                placeholder.textContent = 'No recipe available';
+
+                container.appendChild(placeholder);
+            }
+        }
+
+        async function updateAllPositions() {
+            const updates = [];
+            let globalPosition = 0;
+
+            // Get all recipe items in their current order (excluding placeholders)
+            const allItems = document.querySelectorAll('.recipe-item[data-id]:not([data-id^="placeholder-"])');
+
+            allItems.forEach(item => {
+                const itemId = item.dataset.id;
+                const day = item.closest('.day-card').dataset.day;
+                const meal = item.closest('.sortable-meal').dataset.meal;
+
+                // Skip unknown items
+                if (itemId === 'unknown') {
+                    return;
+                }
+
+                // Update the item's data attributes
+                item.dataset.position = globalPosition;
+                item.dataset.day = day;
+                item.dataset.meal = meal;
+
+                updates.push({
+                    id: itemId,
+                    position: globalPosition,
+                    day: day,
+                    meal: meal
+                });
+
+                globalPosition++;
+            });
+
+            try {
+                const response = await fetch('/update-weekly-positions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ updates })
+                });
+
+                if (!response.ok) {
+                    console.error('Failed to update positions');
+                }
+            } catch (error) {
+                console.error('Error updating positions:', error);
+            }
+        }
+    });
+</script>
+{% endblock %} -->

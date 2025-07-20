@@ -1,24 +1,31 @@
-from fastapi import Depends, FastAPI, HTTPException, Form, Request, status
+from fastapi import Depends, FastAPI, Form, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from dependency.get_current_user import get_current_user
-from utils.config import settings
 from utils.constants import LOGIN_RATE_LIMIT, GENERAL_RATE_LIMIT
 from services.ingredients import IngredientService
-from utils.signed_token import serializer
+from services.auth import AuthService
+from services.error_handlers import (
+    unauthorized_handler,
+    not_found_handler,
+    validation_error_handler,
+    too_many_requests_handler,
+    internal_server_error_handler,
+    general_exception_handler,
+)
 
 
 app = FastAPI()
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ingredient_service = IngredientService()
+auth_service = AuthService()
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -34,7 +41,7 @@ async def show_login_form(request: Request):
 @limiter.limit(LOGIN_RATE_LIMIT)
 async def login(
     request: Request,
-    username: str = Form(..., min_length=3, max_length=50),
+    username: str = Form(..., min_length=2, max_length=50),
     password: str = Form(
         ...,
         min_length=8,
@@ -50,44 +57,11 @@ async def login(
     application's stored credentials. If the credentials are valid, a signed
     authentication token is generated and set as a cookie in the response.
     Otherwise, the user is redirected back to the login page with an error message.
-
-    Args:
-        request (Request): The HTTP request object.
-        username (str): The username provided by the user, with a minimum length of 3
-                        and a maximum length of 50 characters.
-        password (str): The password provided by the user, with a minimum length of 8
-                        and a maximum length of 128 characters.
-
-    Returns:
-        HTMLResponse: A redirect to the home page with a signed authentication token
-                      set as a cookie if authentication is successful. Otherwise,
-                      renders the login page with an error message.
     """
-    if (
-        not pwd_context.verify(password, settings.app_password)
-        or username != settings.app_username
-    ):
-        # Authentication failed, return to login page with error message
-        return templates.TemplateResponse(
-            "login.html.jinja",
-            {
-                "request": request,
-                "error": "Invalid username or password",
-            },
-        )
+    if not auth_service.check_user_credentials(username, password):
+        return auth_service.create_error_response("Invalid username or password")
 
-    # Authentication successful, redirect with cookie
-    signed_token = serializer.dumps({"username": username})
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(
-        key="auth_token",
-        value=signed_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=settings.max_age,
-    )
-    return response
+    return auth_service.create_auth_cookie(username)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -97,9 +71,9 @@ async def read_index(request: Request, _: str = Depends(get_current_user)):
     return response
 
 
-@app.post("/results", response_class=HTMLResponse)
+@app.post("/ingredients", response_class=HTMLResponse)
 @limiter.limit(GENERAL_RATE_LIMIT)
-async def results(
+async def ingredients(
     request: Request,
     recipes_text: str = Form(..., min_length=10),
     _: str = Depends(get_current_user),
@@ -126,29 +100,92 @@ async def results(
         HTMLResponse: A rendered HTML template displaying the categorized ingredients
         or an error message if the input is invalid or processing fails.
     """
-    try:
-        if not recipes_text.strip():
-            return templates.TemplateResponse(
-                "index.html.jinja",
-                {
-                    "request": request,
-                    "error": "Please provide some recipes text.",
-                },
-            )
-        processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
+    processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
+    return templates.TemplateResponse(
+        "ingredients.html.jinja",
+        {"request": request, "data": processed_data},
+    )
 
-        return templates.TemplateResponse(
-            "results.html.jinja",
-            {"request": request, "data": processed_data},
-        )
-    except Exception as e:
-        return templates.TemplateResponse(
-            "index.html.jinja",
-            {
-                "request": request,
-                "error": f"Error processing request: {str(e)}",
-            },
-        )
+
+# TODO: build services logic, too much for route handlers
+# @app.get("/weekly", response_class=HTMLResponse)
+# @limiter.limit(GENERAL_RATE_LIMIT)
+# async def weekly(request: Request, _: str = Depends(get_current_user)):
+#     try:
+#         # Order by position to maintain user's preferred order
+#         weekly_table = (
+#             supabase.table("weekly").select("*").order("position", desc=False)
+#                     .execute()
+#         )
+#         links = weekly_table.data
+
+#         # Create meal plan structure directly from database data
+#         meal_plan: dict[str, dict[str, list[dict]]] = {}
+
+#         # Collect all days and meals that exist in the database
+#         for link in links:
+#             if not isinstance(link, dict) or "link" not in link:
+#                 continue
+
+#             day = link.get("day_name")
+#             meal = link.get("meal_type")
+
+#             if not day or not meal:
+#                 continue
+
+#             if day not in meal_plan:
+#                 meal_plan[day] = {}
+
+#             if meal not in meal_plan[day]:
+#                 meal_plan[day][meal] = []
+
+#             meal_plan[day][meal].append(link)
+
+#         return templates.TemplateResponse(
+#             "weekly.html.jinja",
+#             {"request": request, "data": meal_plan},
+#         )
+#     except Exception as e:
+#         return templates.TemplateResponse(
+#             "weekly.html.jinja",
+#             {
+#                 "request": request,
+#                 "data": {},
+#                 "error": f"Error loading weekly plan: {str(e)}"
+#             },
+#             status_code=500
+#         )
+
+
+# @app.post("/update-weekly-positions")
+# async def update_weekly_positions(
+#     request: Request,
+#     _: str = Depends(get_current_user)
+# ):
+#     try:
+#         body = await request.json()
+#         updates = body.get("updates", [])
+
+#         for update in updates:
+#             item_id = update.get("id")
+#             new_position = update.get("position")
+#             day = update.get("day")
+#             meal = update.get("meal")
+
+#             # Skip placeholder items
+#             if not item_id or item_id in ["placeholder", "unknown"]:
+#                 continue
+
+#             # Update the position and location in database
+#             supabase.table("weekly").update({
+#                 "position": new_position,
+#                 "day_name": day,
+#                 "meal_type": meal
+#             }).eq("id", item_id).execute()
+
+#         return {"status": "success"}
+#     except Exception as e:
+#         return {"status": "error", "message": str(e)}
 
 
 @app.get("/logout", response_class=HTMLResponse)
@@ -158,14 +195,11 @@ async def logout():
     return response
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    if exc.status_code == status.HTTP_401_UNAUTHORIZED:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    elif exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-        return templates.TemplateResponse(
-            "login.html.jinja",
-            {"request": request, "error": "Too many requests. Please try again later."},
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        )
-    raise exc
+app.exception_handler(status.HTTP_401_UNAUTHORIZED)(unauthorized_handler)
+app.exception_handler(status.HTTP_404_NOT_FOUND)(not_found_handler)
+app.exception_handler(RequestValidationError)(validation_error_handler)
+app.exception_handler(status.HTTP_429_TOO_MANY_REQUESTS)(too_many_requests_handler)
+app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)(
+    internal_server_error_handler
+)
+app.exception_handler(Exception)(general_exception_handler)

@@ -5,23 +5,203 @@
 
 {% block extra_styles %}
 <style>
-    #recipeForm > div {
+    .main-container {
+        max-width: 80rem;
+        margin: 0 auto;
+    }
+
+    .form-container {
+        background: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .textarea-group {
         display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1rem;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .textarea-label {
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: var(--spacing-xs);
     }
 
     .ingredient-textarea,
     .have-at-home-textarea {
-        flex: 1;
-        min-height: 200px;
-        font-size: 1.2em;
-        box-sizing: border-box;
+        min-height: 16rem;
+        font-size: var(--font-size-base);
         resize: vertical;
-        background: #232323;
-        color: #e0e0e0;
-        border: 1px solid #444;
+        background: var(--surface-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-sm);
+        padding: var(--spacing-md);
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+        line-height: 1.6;
+        transition: var(--transition);
+    }
+
+    .ingredient-textarea:focus,
+    .have-at-home-textarea:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+    }
+
+    .format-tools {
+        display: flex;
+        gap: var(--spacing-xs);
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .format-btn {
+        background: var(--elevated-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--border-radius-sm);
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .format-btn:hover {
+        background: var(--accent-blue);
+        color: var(--text-primary);
+        border-color: var(--accent-blue);
+    }
+
+    .format-status {
+        background: var(--success);
+        color: var(--card-bg);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--border-radius-sm);
+        font-size: var(--font-size-sm);
+        margin-top: var(--spacing-xs);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .format-status.show {
+        opacity: 1;
+    }
+
+    .submit-container {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-md);
+    }
+
+    .submit-btn {
+        background: linear-gradient(135deg, var(--accent-green), var(--success));
+        padding: var(--spacing-md) var(--spacing-xxl);
+        font-size: var(--font-size-md);
+        font-weight: 600;
+        border-radius: var(--border-radius-sm);
+        min-width: 12rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .submit-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+    }
+
+    .submit-btn:hover::before {
+        left: 100%;
+    }
+
+    .submit-btn:disabled {
+        background: var(--elevated-bg);
+        cursor: not-allowed;
+    }
+
+    .weekly-link {
+        background: var(--accent-blue);
+        color: var(--text-primary);
+        padding: var(--spacing-md) var(--spacing-xl);
+        text-decoration: none;
+        border-radius: var(--border-radius-sm);
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+    }
+
+    .weekly-link:hover {
+        background: #4c94ff;
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+
+    @media (max-width: 1024px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .ingredient-textarea,
+        .have-at-home-textarea {
+            min-height: 12rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .form-container {
+            padding: var(--spacing-lg);
+        }
+
+        .submit-container {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .submit-btn,
+        .weekly-link {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .format-tools {
+            flex-wrap: wrap;
+        }
+    }
+
+    @media (pointer: coarse) {
+
+        .ingredient-textarea,
+        .have-at-home-textarea {
+            min-height: 14rem;
+            font-size: var(--font-size-md);
+            padding: var(--spacing-lg);
+        }
+
+        .format-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--font-size-base);
+        }
     }
 </style>
 {% endblock %}
@@ -29,18 +209,65 @@
 {% block header_title %}Ingredients{% endblock %}
 
 {% block content %}
+<div class="main-container">
+    {% if error %}
+        <div class="error-message">{{ error }}</div>
+    {% endif %}
 
-{% if error %}
-<div class="error-message">{{ error }}</div>
-{% endif %}
+    <div class="form-container">
+        <form action="/ingredients" method="post" id="recipeForm">
+            <div class="form-grid">
+                <div class="textarea-group">
+                    <label for="recipes_text" class="textarea-label">
+                        📝 Ingredients List & URLs
+                        <!-- TODO: needs styling -->
+                        <span>(Smart formatting enabled)</span>
+                    </label>
+                    <div class="format-tools">
+                        <button type="button" class="format-btn" id="autoFormatBtn">
+                            🪄 Auto Format
+                        </button>
+                        <button type="button" class="format-btn" id="clearBtn">
+                            🗑️ Clear
+                        </button>
+                        <button type="button" class="format-btn" id="addUrlBtn">
+                            🔗 Add URL
+                        </button>
+                    </div>
+                    <div class="smart-textarea-container">
+                        <textarea id="recipes_text" name="recipes_text"
+                            placeholder="Just paste your content here - It will be auto-formatted!&#10;&#10;You can paste:&#10;• URLs&#10;• Ingredients"
+                            required class="ingredient-textarea"></textarea>
+                        <div id="formatStatus" class="format-status"></div>
+                    </div>
+                </div>
 
-<form action="/results" method="post" id="recipeForm">
-    <div>
-        <textarea name="recipes_text" placeholder="Paste your ingredients here..." required class="ingredient-textarea"></textarea>
-        <textarea name="have_at_home" placeholder="Paste your home items here..." class="have-at-home-textarea"></textarea>
+                <div class="textarea-group">
+                    <label for="have_at_home" class="textarea-label">🏠 Available at Home</label>
+                    <textarea id="have_at_home" name="have_at_home"
+                        placeholder="Items you already have...&#10;&#10;Example:&#10;salt&#10;pepper&#10;olive oil&#10;butter"
+                        class="have-at-home-textarea"></textarea>
+                </div>
+            </div>
+
+            <div class="submit-container">
+                <button type="submit" class="submit-btn">✨ Process Ingredients</button>
+                <a href="/weekly" class="weekly-link">📅 Weekly Plan</a>
+            </div>
+        </form>
     </div>
-    <button type="submit">Process</button>
-</form>
+
+    <div class="feature-hint">
+        <h3>🚀 Smart Features</h3>
+        <ul>
+            <li><strong>Auto-formatting:</strong> Paste any content and we'll detect URLs and ingredients automatically
+            </li>
+            <li><strong>URL Detection:</strong> Any line starting with http/https becomes a recipe URL</li>
+            <li><strong>Smart Parsing:</strong> Ingredient lists are automatically formatted with proper markers</li>
+            <li><strong>Home Filter:</strong> Items you have at home are excluded from the shopping list</li>
+        </ul>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -48,10 +275,138 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('recipeForm').addEventListener('submit', function (event) {
             event.preventDefault();
-            const button = document.querySelector('button[type="submit"]');
+            const button = document.querySelector('.submit-btn');
+            const originalText = button.textContent;
             button.disabled = true;
-            button.textContent = "Processing...";
-            this.submit();
+            button.textContent = "🔄 Processing...";
+
+            // Add a slight delay to show the loading state
+            setTimeout(() => {
+                this.submit();
+            }, 100);
+        });
+    });
+    document.addEventListener('DOMContentLoaded', function () {
+        const textarea = document.getElementById('recipes_text');
+        const formatStatus = document.getElementById('formatStatus');
+        const autoFormatBtn = document.getElementById('autoFormatBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const addUrlBtn = document.getElementById('addUrlBtn');
+
+        // Auto-format function
+        function autoFormatContent(content) {
+            if (!content.trim()) return content;
+
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            const formatted = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Check if line is a URL
+                if (line.match(/^https?:\/\//)) {
+                    formatted.push(`# ${line}`);
+                }
+                // Check if line looks like an ingredient (not a URL and has content)
+                else if (line && !line.startsWith('#')) {
+                    formatted.push(`## ${line}`);
+                }
+                // If it's already formatted, keep it as is
+                else {
+                    formatted.push(line);
+                }
+            }
+
+            return formatted.join('\n');
+        }
+
+        // Show status message
+        function showStatus(message, duration = 2000) {
+            formatStatus.textContent = message;
+            formatStatus.classList.add('show');
+            setTimeout(() => {
+                formatStatus.classList.remove('show');
+            }, duration);
+        }
+
+        // Auto-format on paste
+        textarea.addEventListener('paste', function (e) {
+            setTimeout(() => {
+                const currentContent = textarea.value;
+                const formatted = autoFormatContent(currentContent);
+
+                if (formatted !== currentContent) {
+                    textarea.value = formatted;
+                    showStatus('✅ Content auto-formatted!');
+                }
+            }, 100);
+        });
+
+        // Manual format button
+        autoFormatBtn.addEventListener('click', function () {
+            const currentContent = textarea.value;
+            const formatted = autoFormatContent(currentContent);
+            textarea.value = formatted;
+            showStatus('🪄 Content formatted!');
+            textarea.focus();
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', function () {
+            textarea.value = '';
+            showStatus('🗑️ Content cleared!');
+            textarea.focus();
+        });
+
+        // Add URL button
+        addUrlBtn.addEventListener('click', function () {
+            const url = prompt('Enter recipe URL:');
+            if (url && url.trim()) {
+                const currentContent = textarea.value;
+                const newContent = currentContent ? `${currentContent}\n\n# ${url.trim()}\n## ` : `# ${url.trim()}\n## `;
+                textarea.value = newContent;
+                showStatus('🔗 URL added!');
+                textarea.focus();
+                // Position cursor after the "## " for easy ingredient entry
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        });
+
+        // Form submission with loading state
+        document.getElementById('recipeForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const button = document.querySelector('.submit-btn');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = "🔄 Processing...";
+
+            // Add a slight delay to show the loading state
+            setTimeout(() => {
+                this.submit();
+            }, 100);
+        });
+
+        // Live formatting hints
+        textarea.addEventListener('input', function () {
+            const content = textarea.value;
+            const lines = content.split('\n');
+            let hasUrls = false;
+            let hasIngredients = false;
+
+            lines.forEach(line => {
+                if (line.match(/^https?:\/\//)) hasUrls = true;
+                if (line.trim() && !line.startsWith('#') && !line.match(/^https?:\/\//)) hasIngredients = true;
+            });
+
+            if (hasUrls && hasIngredients && content.length > 50) {
+                autoFormatBtn.style.background = 'var(--accent-green)';
+                autoFormatBtn.style.color = 'var(--text-primary)';
+                autoFormatBtn.style.borderColor = 'var(--accent-green)';
+            } else {
+                autoFormatBtn.style.background = 'var(--elevated-bg)';
+                autoFormatBtn.style.color = 'var(--text-secondary)';
+                autoFormatBtn.style.borderColor = 'var(--border-color)';
+            }
         });
     });
 </script>
