@@ -206,6 +206,21 @@ class IngredientService:
     #     except Exception as e:
     #         print(f"Error saving URL to the 'weekly' table: {e}")
 
+    def validate_recipes_text(self, recipes_text: str) -> None:
+        """
+        Validate the recipes text input.
+
+        Args:
+            recipes_text (str): The raw recipes text to validate.
+
+        Raises:
+            ValueError: If the input is invalid.
+        """
+        if not recipes_text.strip():
+            raise ValueError("Please provide some recipes text.")
+        if len(recipes_text) < 10:
+            raise ValueError("Recipes text must be at least 10 characters long.")
+
     def process_recipes(
         self, recipes_text: str, have_at_home: str | None = None
     ) -> str:
@@ -223,10 +238,14 @@ class IngredientService:
         Returns:
             str: Sanitized HTML containing categorized ingredients.
         """
+        self.validate_recipes_text(recipes_text)
         cleaned_recipes_text = "\n".join(
             line.strip() for line in recipes_text.splitlines() if line.strip()
         )
         parsed_data = parse_input_to_list(cleaned_recipes_text)
+
+        if not parsed_data:
+            raise ValueError("No valid recipes or ingredients found in the input.")
 
         # TODO: don't like this mix of DB and LLM logic, consider refactoring
         # Clear the 'weekly' table before adding new entries
@@ -235,17 +254,21 @@ class IngredientService:
         # for index, item in enumerate(parsed_data):
         #     self.save_url_to_weekly_table(item["url"], index)
 
-        # Extract only the ingredients for the Gemini prompt
-        ingredients_text = "\n\n".join(item["ingredients"] for item in parsed_data)
+        try:
+            # Extract only the ingredients for the Gemini prompt
+            ingredients_text = "\n\n".join(item["ingredients"] for item in parsed_data)
 
-        # Create the prompt for Gemini
-        prompt = create_ingredient_prompt(ingredients_text, have_at_home)
+            prompt = create_ingredient_prompt(ingredients_text, have_at_home)
 
-        # Send the prompt to Gemini and process the response
-        model_response: GenerateContentResponse = self._client.models.generate_content(
-            model=LLM_MODEL,
-            contents=prompt,
-        )
+            model_response: GenerateContentResponse = (
+                self._client.models.generate_content(
+                    model=LLM_MODEL,
+                    contents=prompt,
+                )
+            )
 
-        raw_response = extract_human_readable_response(model_response)
-        return self._cleaner.clean(raw_response)
+            raw_response = extract_human_readable_response(model_response)
+            # Don't trust LLM output, sanitize it
+            return self._cleaner.clean(raw_response)
+        except Exception as e:
+            raise Exception(f"Error processing recipes: {str(e)}")

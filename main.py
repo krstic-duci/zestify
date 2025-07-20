@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI, HTTPException, Form, Request, status
+from fastapi import Depends, FastAPI, Form, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -10,6 +11,14 @@ from dependency.get_current_user import get_current_user
 from utils.constants import LOGIN_RATE_LIMIT, GENERAL_RATE_LIMIT
 from services.ingredients import IngredientService
 from services.auth import AuthService
+from services.error_handlers import (
+    unauthorized_handler,
+    not_found_handler,
+    validation_error_handler,
+    too_many_requests_handler,
+    internal_server_error_handler,
+    general_exception_handler,
+)
 
 
 app = FastAPI()
@@ -20,8 +29,6 @@ auth_service = AuthService()
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# TODO: gotta fix global error states for every template
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -64,10 +71,9 @@ async def read_index(request: Request, _: str = Depends(get_current_user)):
     return response
 
 
-# TODO: move logic to a service, too much for route handler
-@app.post("/results", response_class=HTMLResponse)
+@app.post("/ingredients", response_class=HTMLResponse)
 @limiter.limit(GENERAL_RATE_LIMIT)
-async def results(
+async def ingredients(
     request: Request,
     recipes_text: str = Form(..., min_length=10),
     _: str = Depends(get_current_user),
@@ -94,29 +100,11 @@ async def results(
         HTMLResponse: A rendered HTML template displaying the categorized ingredients
         or an error message if the input is invalid or processing fails.
     """
-    try:
-        if not recipes_text.strip():
-            return templates.TemplateResponse(
-                "index.html.jinja",
-                {
-                    "request": request,
-                    "error": "Please provide some recipes text.",
-                },
-            )
-        processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
-
-        return templates.TemplateResponse(
-            "results.html.jinja",
-            {"request": request, "data": processed_data},
-        )
-    except Exception as e:
-        return templates.TemplateResponse(
-            "index.html.jinja",
-            {
-                "request": request,
-                "error": f"Error processing request: {str(e)}",
-            },
-        )
+    processed_data = ingredient_service.process_recipes(recipes_text, have_at_home)
+    return templates.TemplateResponse(
+        "ingredients.html.jinja",
+        {"request": request, "data": processed_data},
+    )
 
 
 # TODO: build services logic, too much for route handlers
@@ -207,17 +195,11 @@ async def logout():
     return response
 
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    if exc.status_code == status.HTTP_401_UNAUTHORIZED:
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
-    elif exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-        return templates.TemplateResponse(
-            "login.html.jinja",
-            {"request": request, "error": "Too many requests. Please try again later."},
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-        )
-    raise exc
-
-
-# TODO: add 404 and error pages
+app.exception_handler(status.HTTP_401_UNAUTHORIZED)(unauthorized_handler)
+app.exception_handler(status.HTTP_404_NOT_FOUND)(not_found_handler)
+app.exception_handler(RequestValidationError)(validation_error_handler)
+app.exception_handler(status.HTTP_429_TOO_MANY_REQUESTS)(too_many_requests_handler)
+app.exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)(
+    internal_server_error_handler
+)
+app.exception_handler(Exception)(general_exception_handler)

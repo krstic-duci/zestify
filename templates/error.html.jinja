@@ -1,0 +1,68 @@
+{% extends "base.html.jinja" %}
+
+{% block page_title %}Error | Zestify{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        padding: var(--spacing-xl);
+    }
+
+    .error-icon {
+        font-size: 4rem;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .error-title {
+        color: var(--danger);
+        font-size: var(--font-size-xl);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .error-message {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xl);
+        max-width: 500px;
+        line-height: 1.6;
+    }
+
+    .error-actions {
+        display: flex;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+    }
+
+    .error-btn {
+        background: var(--accent-blue);
+        color: var(--text-primary);
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--border-radius-sm);
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .error-btn:hover {
+        background: var(--success);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h1 class="error-title">Oops! Something went wrong</h1>
+    <p class="error-message">{{ error }}</p>
+    <div class="error-actions">
+        <a href="/" class="error-btn">🏠 Go Home</a>
+        <a href="javascript:history.back()" class="error-btn">↩️ Go Back</a>
+    </div>
+</div>
+{% endblock %}

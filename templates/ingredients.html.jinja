@@ -266,6 +266,7 @@
             margin-left: 0;
         }
     }
+
     @media (pointer: coarse) {
         .ingredient-item {
             min-height: 3.5rem;
@@ -323,6 +324,8 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Swedish quantity patterns
+        const quantityUnitPattern = /^[\d½¼¾.,]+\s*(g|kg|ml|l|st|dl|cl|tsk|msk|krm|stk|styck|gram|kilo|liter|matsked|tesked|krm|burk|påse|förpackning)\s+/i;
         let copiedCount = 0;
         const listItems = document.querySelectorAll('li');
         const totalItemsEl = document.getElementById('totalItems');
@@ -340,9 +343,6 @@
                 // Extract ingredient name
                 const extractIngredientName = (text) => {
                     const cleanText = text.trim();
-
-                    // Swedish quantity patterns
-                    const quantityUnitPattern = /^[\d½¼¾.,]+\s*(g|kg|ml|l|st|dl|cl|tsk|msk|krm|stk|styck|gram|kilo|liter|matsked|tesked|krm|burk|påse|förpackning)\s+/i;
 
                     const match = cleanText.match(quantityUnitPattern);
                     if (match) {
@@ -380,51 +380,51 @@
                     navigator.clipboard.writeText(ingredientName).then(function () {
                         // Check if already copied to toggle behavior
                         const isAlreadyCopied = wrapper.dataset.copied === 'true';
-                        
+
                         if (!isAlreadyCopied) {
                             // First time copying - mark as copied
                             copyBtn.textContent = '✓ Copied!';
                             copyBtn.classList.add('copied');
-                            
+
                             // Add strikethrough to the text
                             textSpan.style.textDecoration = 'line-through';
                             textSpan.style.opacity = '0.6';
                             textSpan.style.color = 'var(--text-secondary)';
-                            
+
                             // Mark wrapper as copied
                             wrapper.dataset.copied = 'true';
                             wrapper.classList.add('item-copied');
-                            
+
                             // Update stats
                             copiedCount++;
                             copiedItemsEl.textContent = copiedCount;
-                            
+
                             // Change button to "Undo" after animation
                             setTimeout(function () {
                                 copyBtn.textContent = '↩️ Undo';
                                 copyBtn.classList.remove('copied');
                                 copyBtn.classList.add('undo-btn');
                             }, 1500);
-                            
+
                         } else {
                             // Already copied - toggle undo
                             copyBtn.textContent = '📋 Copy';
                             copyBtn.classList.remove('undo-btn');
-                            
+
                             // Remove strikethrough
                             textSpan.style.textDecoration = 'none';
                             textSpan.style.opacity = '1';
                             textSpan.style.color = 'var(--text-primary)';
-                            
+
                             // Mark as not copied
                             wrapper.dataset.copied = 'false';
                             wrapper.classList.remove('item-copied');
-                            
+
                             // Update stats
                             copiedCount--;
                             copiedItemsEl.textContent = copiedCount;
                         }
-                        
+
                     }).catch(function (err) {
                         console.error('Failed to copy text: ', err);
                         copyBtn.textContent = '❌ Error';

@@ -211,11 +211,11 @@
 {% block content %}
 <div class="main-container">
     {% if error %}
-    <div class="error-message">{{ error }}</div>
+        <div class="error-message">{{ error }}</div>
     {% endif %}
 
     <div class="form-container">
-        <form action="/results" method="post" id="recipeForm">
+        <form action="/ingredients" method="post" id="recipeForm">
             <div class="form-grid">
                 <div class="textarea-group">
                     <label for="recipes_text" class="textarea-label">
