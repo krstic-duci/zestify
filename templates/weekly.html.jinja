@@ -21,15 +21,8 @@
         background: var(--card-bg);
         border-radius: var(--border-radius);
         padding: var(--spacing-lg);
-        box-shadow: var(--shadow);
         border: 1px solid var(--border-color);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
         min-height: 16rem;
-    }
-
-    .day-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
     }
 
     .day-card h3 {
@@ -38,17 +31,15 @@
         font-weight: 600;
         margin: 0 0 var(--spacing-lg) 0;
         text-align: center;
-        letter-spacing: -0.025em;
     }
 
     .meal-section {
         background: var(--surface-bg);
-        border-radius: calc(var(--border-radius) * 0.6);
+        border-radius: var(--border-radius-sm);
         padding: var(--spacing-md);
         margin-bottom: var(--spacing-md);
         border: 1px solid var(--border-color);
         min-height: 4.5rem;
-        transition: var(--transition);
     }
 
     .meal-section:last-child {
@@ -65,22 +56,19 @@
         font-weight: 500;
         margin: 0 0 var(--spacing-sm) 0;
         text-align: center;
-        letter-spacing: -0.015em;
     }
 
     .recipe-item {
         display: block;
         margin: var(--spacing-xs) 0;
         padding: var(--spacing-md);
-        border-radius: calc(var(--border-radius) * 0.5);
+        border-radius: var(--border-radius-sm);
         background: var(--elevated-bg);
         color: var(--text-primary);
         text-decoration: none;
         font-size: var(--font-size-base);
         font-weight: 500;
         line-height: 1.4;
-        transition: var(--transition);
-        position: relative;
         border: 1px solid transparent;
         min-height: 3rem;
         display: flex;
@@ -101,7 +89,6 @@
     .recipe-item:not(.no-recipe):hover {
         background: var(--hover-bg);
         border-color: var(--accent-blue);
-        transform: translateY(-1px);
         color: var(--text-primary);
         text-decoration: none;
     }
@@ -116,7 +103,6 @@
         font-size: var(--font-size-md);
         font-weight: bold;
         line-height: 1;
-        transition: color 0.2s ease;
     }
 
     .recipe-item:not(.no-recipe):hover::before {
@@ -153,9 +139,8 @@
         font-size: var(--font-size-base);
         font-weight: 500;
         padding: var(--spacing-sm) var(--spacing-lg);
-        border-radius: calc(var(--border-radius) * 0.5);
+        border-radius: var(--border-radius-sm);
         border: 1px solid var(--border-color);
-        transition: var(--transition);
         display: inline-flex;
         align-items: center;
         gap: var(--spacing-xs);
@@ -171,18 +156,13 @@
     .sortable-ghost {
         opacity: 0.3;
         background: var(--accent-blue) !important;
-        transform: rotate(3deg);
     }
 
     .sortable-chosen {
-        transform: scale(1.02);
-        box-shadow: 0 8px 32px rgba(88, 166, 255, 0.3);
         border-color: var(--accent-blue) !important;
     }
 
     .sortable-drag {
-        transform: rotate(2deg) scale(1.05);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
         z-index: 1000;
     }
 
@@ -322,7 +302,7 @@
 {% endblock %}
 
 <!-- {% block scripts %}
-<script defer src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Make each meal section sortable

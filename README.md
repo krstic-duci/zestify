@@ -21,11 +21,11 @@ Zestify is a personal web application that helps me and my family with aggregate
 ## Tech Stack
 
 - **Backend**: FastAPI 0.116+
-- **AI/ML**: Google Gemini 2.5 Flash
+- **AI/ML**: Google Gemini 1.5 Flash
 - **Authentication**: Passlib (bcrypt) + itsdangerous
 - **Templates**: Jinja2
 - **Security**: Bleach HTML sanitization
-- **Rate Limiting**: SlowAPI
+- **Rate Limiting**: Custom implementation (FastAPI dependencies)
 - **Configuration**: Pydantic Settings
 - **Python**: 3.13+
 
@@ -33,23 +33,35 @@ Zestify is a personal web application that helps me and my family with aggregate
 
 ```
 zestify/
-├── main.py                 # FastAPI application entry point
+├── main.py                    # FastAPI application entry point
 ├── dependency/
-│   └── get_current_user.py # Authentication dependency
+│   ├── get_current_user.py    # Authentication dependency
+│   └── limiter.py             # Rate limiting dependencies
 ├── services/
-│   └── ingredients.py      # Core ingredient processing logic
+│   ├── auth.py                # Authentication service
+│   ├── error_handlers.py      # HTTP error handlers
+│   └── ingredients.py         # Core ingredient processing logic
 ├── utils/
-│   ├── config.py           # Configuration management
-│   ├── constants.py        # Application constants
-│   ├── llm_prompt.py       # LLM interaction utilities
-│   └── signed_token.py     # Token serialization
+│   ├── config.py              # Configuration management
+│   ├── constants.py           # Application constants
+│   └── signed_token.py        # Token serialization
 ├── templates/
-│   ├── base.html.jinja     # Base template
-│   ├── index.html.jinja    # Main ingredient input page
-│   ├── login.html.jinja    # Authentication page
-│   └── results.html.jinja  # Processed results display
-├── static/                 # Static assets (CSS, JS, images)
-└── .env                    # Environment variables (not in repo)
+│   ├── base.html.jinja        # Base template
+│   ├── index.html.jinja       # Main ingredient input page
+│   ├── login.html.jinja       # Authentication page
+│   ├── weekly.html.jinja      # Weekly meal planning page
+│   ├── _ingredients_partial.html.jinja # Ingredient results partial
+│   ├── 404.html.jinja         # Not found page
+│   └── error.html.jinja       # Error page
+├── static/
+│   ├── css/                   # Stylesheets
+│   ├── js/                    # JavaScript files
+│   ├── favicon.ico            # Site icon
+│   └── robots.txt             # SEO configuration
+├── db/                        # Database connection
+├── pyproject.toml             # Project dependencies
+├── ruff.toml                  # Code quality configuration
+└── .env                       # Environment variables (not in repo)
 ```
 
 ## Installation
@@ -90,6 +102,11 @@ zestify/
 5. **Access the application**
    Open your browser to `http://localhost:8000`
 
+6. **Build the application**
+   ```bash
+   uv run fastapi run
+   ```
+
 ## Usage
 
 1. **Login**: Navigate to `/login` and enter your credentials
@@ -102,19 +119,26 @@ zestify/
 
 - `GET /` - Main ingredient input page (protected)
 - `GET /login` - Login form
-- `POST /login` - Authentication endpoint
-- `POST /results` - Process recipes and return results (protected)
+- `POST /login` - Authentication endpoint (rate limited: 5/minute)
+- `POST /ingredients` - Process recipes and return results
 - `GET /logout` - Logout and clear session
 - `GET /static/*` - Static file serving
+
+## Rate Limiting
+
+- **Login endpoint**: 5 requests per minute per IP
+- **General endpoints**: 10 requests per minute per IP
+- **Implementation**: Custom FastAPI dependencies (no external dependencies)
 
 ## Security Features
 
 - **Authentication**: Session-based auth with signed tokens
 - **Password Hashing**: bcrypt with configurable rounds
-- **Rate Limiting**: 5 requests/minute for login, 10/minute for general endpoints
+- **Rate Limiting**: Custom implementation - 5 requests/minute for login, 10/minute for general endpoints
 - **HTML Sanitization**: Bleach filtering for safe output
 - **Secure Cookies**: HttpOnly, Secure, SameSite=Strict
 - **Input Validation**: Pydantic form validation with length constraints
+- **Error Handling**: Comprehensive HTTP status code handling
 
 ## Configuration
 
@@ -131,17 +155,21 @@ Key configuration options in `utils/config.py`:
 
 ```bash
 # Type checking
-mypy .
+uv run mypy .
 
 # Linting and formatting
-ruff check .
-ruff format .
+uv run ruff check .
+uv run ruff format .
+
+# Run development server
+uv run fastapi dev
 ```
 
 ### Development Dependencies
 
 - `mypy`: Static type checking
 - `ruff`: Fast Python linter and formatter
+- `types-bleach` & `types-passlib`: Type stubs for better type checking
 
 ## License
 
