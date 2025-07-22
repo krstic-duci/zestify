@@ -1,4 +1,4 @@
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates

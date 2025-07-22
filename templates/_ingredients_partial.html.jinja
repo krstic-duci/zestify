@@ -1,0 +1,34 @@
+<div class="results-container" data-llm-time="{{ llm_time | round(2) }}">
+    <div class="results-content">
+        <div class="section-header">
+            <span class="section-icon">🛒</span>
+            <h2>Shopping List</h2>
+        </div>
+
+        <div class="ai-timing-badge">
+            <span class="timing-text">AI processed your recipes in {{ llm_time | round(2) }} seconds</span>
+            <span class="timing-emoji">
+                {% if llm_time < 2 %}⚡ {% elif llm_time < 4 %}🚀 {% else %}⏳ {% endif %} </span>
+        </div>
+
+        <div class="stats-bar" id="statsBar" style="display: none;">
+            <div class="stat-item">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="copiedItems">0</div>
+                <div class="stat-label">Copied</div>
+            </div>
+        </div>
+
+        <div id="resultsContent">
+            {{ data | safe }}
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button type="button" id="clearResultsBtn" class="back-link">← Clear Results</button>
+        <!-- <a href="/weekly" class="weekly-link">Weekly Plan →</a> -->
+    </div>
+</div>

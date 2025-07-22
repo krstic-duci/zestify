@@ -10,5 +10,4 @@ COOKIE_MAX_AGE = 86400  # 24 hours
 ALLOWED_TAGS = ["div", "h3", "ul", "li", "span", "button"]
 
 # API Settings
-# NOTE: if we change model we MUST also change the .env file GEMINI_API_KEY
-LLM_MODEL = "gemini-2.5-flash"
+LLM_MODEL = "gemini-1.5-flash"

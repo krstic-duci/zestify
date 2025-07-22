@@ -1,10 +1,11 @@
+import time
+
+from bleach.sanitizer import Cleaner
 from google import genai
 from google.genai.types import GenerateContentResponse
-from bleach.sanitizer import Cleaner
 
-from utils.constants import LLM_MODEL
 from utils.config import settings
-
+from utils.constants import LLM_MODEL
 
 client = genai.Client(api_key=settings.gemini_api_key)
 cleaner = Cleaner(tags=settings.allowed_tags, strip=True)
@@ -21,8 +22,7 @@ cleaner = Cleaner(tags=settings.allowed_tags, strip=True)
 def extract_human_readable_response(
     model_response: GenerateContentResponse,
 ) -> str:
-    """
-    Extracts and cleans the response content from the Gemini API.
+    """Extract and clean the response content from the Gemini API.
 
     This function processes the response from the Gemini API, extracting the
     relevant content from the first candidate's content parts. It also removes
@@ -35,6 +35,7 @@ def extract_human_readable_response(
     Returns:
         str: The cleaned content extracted from the response, or an error
              message if the extraction fails.
+
     """
     try:
         if (
@@ -42,7 +43,7 @@ def extract_human_readable_response(
             or not model_response.candidates[0].content
             or not model_response.candidates[0].content.parts
         ):
-            return "No content found in the response."
+            return "No content found in the response (first try)."
 
         content = model_response.candidates[0].content.parts[0].text
         if not content:
@@ -58,14 +59,14 @@ def extract_human_readable_response(
 
 
 def parse_input_to_list(input_text: str) -> list[dict[str, str]]:
-    """
-    Parse the input text into a list of dictionaries with 'url' and 'ingredients' keys.
+    """Parse the input text into a list of dictionaries with 'url' and 'ingredients' keys.
 
     Args:
         input_text (str): The raw input text from the frontend.
 
     Returns:
-        list[dict[str, str]]: A list of dictionaries with 'url' and 'ingredients'.
+        list[dict[str, str]]: A list of dictionaries with 'url' and 'ingredients' keys.
+
     """
     # Split the input into sections based on "# URL"
     sections = input_text.split("\n# ")
@@ -99,8 +100,7 @@ def parse_input_to_list(input_text: str) -> list[dict[str, str]]:
 def create_ingredient_prompt(
     ingredients_text: str, have_at_home: str | None = None
 ) -> str:
-    """
-    Create an optimized prompt for ingredient extraction using only ingredients.
+    """Create an optimized prompt for ingredient extraction using only ingredients.
 
     Args:
         ingredients_text (str): The cleaned and structured ingredients text.
@@ -109,39 +109,35 @@ def create_ingredient_prompt(
 
     Returns:
         str: The optimized prompt for the Gemini API.
+
     """
-    have_at_home_section = (
-        f"\n\nEXCLUDE (already have):\n{have_at_home}"
-        if have_at_home and have_at_home.strip()
-        else ""
-    )
+    have_at_home_section = f"\n\nSKIP: {have_at_home}" if have_at_home else ""
 
-    return f"""Extract & aggregate ALL ingredients. Swedish names. Metric only.
-    Categorize: Meat/Fish, Vegetables/Fruits, Dairy, Grains, Herbs, Other.
-    Skip basics (spices, oil, mayo, mustard, broth, breadcrumbs, sesame).
+    return f"""Aggregate ingredients. Swedish names. Categories: Meat/Fish, Veggies, Dairy, Other. Skip basics (spices, oil, mayo, mustard, broth, breadcrumbs).
 
-    Example format for the output:
-    <div>
-        <h3>Meat/Fish</h3>
-        <ul><li>500 g kött</li><li>300 g fisk</li></ul>
-        <h3>Vegetables/Fruits</h3>
-        <ul><li>2 st lök</li><li>400 g morötter</li></ul>
-        <h3>Dairy</h3>
-        <ul><li>250 ml mjölk</li></ul>
-        <h3>Grains</h3>
-        <ul><li>200 g ris</li></ul>
-        <h3>Herbs</h3>
-        <ul><li>1 tsk mynta</li></ul>
-        <h3>Other</h3>
-        <ul><li>100 g chilisås</li></ul>
-    </div>
+    Format: <div><h3>Meat/Fish</h3><ul><li>500g kött</li></ul><h3>Veggies</h3><ul><li>2 lök</li></ul></div>
 
     INGREDIENTS:
-    {ingredients_text}{have_at_home_section}
-    """
+    {ingredients_text}{have_at_home_section}"""
 
 
 class IngredientService:
+    """A service class for processing and managing ingredient-related operations.
+
+    Methods
+    -------
+    validate_recipes_text(recipes_text: str) -> None
+        Validates the provided recipes text input.
+
+    process_recipes(
+        recipes_text: str,
+        have_at_home: str | None = None
+    ) -> dict[str, str | float]
+        Processes the recipes text and returns sanitized HTML with categorized
+        ingredients.
+
+    """
+
     _client = client
     _cleaner = cleaner
 
@@ -207,14 +203,14 @@ class IngredientService:
     #         print(f"Error saving URL to the 'weekly' table: {e}")
 
     def validate_recipes_text(self, recipes_text: str) -> None:
-        """
-        Validate the recipes text input.
+        """Validate the recipes text input.
 
         Args:
             recipes_text (str): The raw recipes text to validate.
 
         Raises:
             ValueError: If the input is invalid.
+
         """
         if not recipes_text.strip():
             raise ValueError("Please provide some recipes text.")
@@ -223,9 +219,8 @@ class IngredientService:
 
     def process_recipes(
         self, recipes_text: str, have_at_home: str | None = None
-    ) -> str:
-        """
-        Process recipes and return sanitized HTML.
+    ) -> dict[str, str | float]:
+        """Process recipes and return sanitized HTML.
 
         This method takes the recipes text input, creates a prompt for the Gemini API,
         and returns a cleaned and categorized list of ingredients.
@@ -237,6 +232,7 @@ class IngredientService:
 
         Returns:
             str: Sanitized HTML containing categorized ingredients.
+
         """
         self.validate_recipes_text(recipes_text)
         cleaned_recipes_text = "\n".join(
@@ -260,15 +256,26 @@ class IngredientService:
 
             prompt = create_ingredient_prompt(ingredients_text, have_at_home)
 
+            llm_start_time = time.time()
+
             model_response: GenerateContentResponse = (
                 self._client.models.generate_content(
                     model=LLM_MODEL,
                     contents=prompt,
+                    config={
+                        "temperature": 0.2,
+                    },
                 )
             )
+            llm_end_time = time.time()
+            llm_duration = llm_end_time - llm_start_time
 
             raw_response = extract_human_readable_response(model_response)
-            # Don't trust LLM output, sanitize it
-            return self._cleaner.clean(raw_response)
+
+            return {
+                # Don't trust LLM output, sanitize it
+                "processed_data": self._cleaner.clean(raw_response),
+                "llm_time": llm_duration,
+            }
         except Exception as e:
-            raise Exception(f"Error processing recipes: {str(e)}")
+            raise Exception(f"Error processing recipes: {e!s}") from e

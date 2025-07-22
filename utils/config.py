@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
@@ -8,8 +9,7 @@ load_dotenv()
 
 
 def get_required_env(key: str) -> str:
-    """
-    Retrieves the value of a required environment variable.
+    """Retrieve the value of a required environment variable.
 
     This function fetches the value of the specified environment variable
     and raises an error if the variable is not set.
@@ -22,6 +22,7 @@ def get_required_env(key: str) -> str:
 
     Raises:
         ValueError: If the environment variable is not set.
+
     """
     value = os.getenv(key)
     if not value:
@@ -38,6 +39,20 @@ SUPABASE_SERVICE_ROLE_KEY: str = get_required_env("SUPABASE_SERVICE_ROLE_KEY")
 
 
 class Settings(BaseSettings):
+    """Application settings loaded from environment variables.
+
+    Attributes:
+        gemini_api_key (str): API key for Gemini service.
+        app_username (str): Username for the application.
+        app_password (str): Hashed password for the application.
+        auth_token_key (str): Key used for authentication tokens.
+        max_age (int): Maximum age for cookies.
+        allowed_tags (list[str]): List of allowed tags.
+        supabase_url (str): URL for the Supabase instance.
+        supabase_service_role_key (str): Service role key for Supabase.
+
+    """
+
     gemini_api_key: str = GEMINI_API_KEY
     app_username: str = USERNAME
     app_password: str = HASHED_PASS

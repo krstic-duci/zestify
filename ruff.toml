@@ -1,6 +1,28 @@
 line-length = 88
-lint.select = ["E", "F"]
-lint.ignore = []
+lint.select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "W",      # pycodestyle warnings  
+    "I",      # isort (import sorting)
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modern Python syntax) - Important for 3.13
+    "B",      # flake8-bugbear (likely bugs)
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # Ruff-specific rules
+    "S",      # flake8-bandit (security) - Good for web apps
+    "PTH",    # flake8-use-pathlib - Modern path handling
+]
+lint.ignore = [
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package  
+    "D105",   # Missing docstring in magic method
+    "D107",   # Missing docstring in __init__
+    "E501",   # Line too long (handled by formatter)
+    "B008",   # Function calls in argument defaults (FastAPI needs this)
+    "S101",   # Use of assert (fine in your code)
+    "S311",   # Random generators (you use secrets appropriately)
+]
 lint.fixable = ["ALL"]
 lint.unfixable = []
 
@@ -10,6 +32,8 @@ exclude = [
     ".ruff_cache",
     ".venv",
     "__pycache__",
+    "templates/",
+    "static/",
 ]
 
 [format]
