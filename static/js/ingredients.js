@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const currentContent = textarea.value;
             const newContent = currentContent ? `${currentContent}\n\n# ${url.trim()}\n## ` : `# ${url.trim()}\n## `;
             textarea.value = newContent;
-            showStatus('🔗 URL added!');
+            showStatus('URL added!');
             textarea.focus();
             // Position cursor after the "## " for easy ingredient entry
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);

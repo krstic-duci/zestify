@@ -7,6 +7,15 @@ from google.genai.types import GenerateContentResponse
 from utils.config import settings
 from utils.constants import LLM_MODEL
 
+
+class RecipeProcessingError(Exception):
+    """Custom exception for recipe processing errors."""
+
+    def __init__(self, message: str, original_error: Exception | None = None):
+        super().__init__(message)
+        self.original_error = original_error
+
+
 client = genai.Client(api_key=settings.gemini_api_key)
 cleaner = Cleaner(tags=settings.allowed_tags, strip=True)
 
@@ -278,4 +287,4 @@ class IngredientService:
                 "llm_time": llm_duration,
             }
         except Exception as e:
-            raise Exception(f"Error processing recipes: {e!s}") from e
+            raise RecipeProcessingError(f"Error processing recipes: {e!s}", e) from e
