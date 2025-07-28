@@ -16,14 +16,16 @@ from services.error_handlers import (
     validation_error_handler,
 )
 from services.ingredients import IngredientService
+from services.weekly import WeeklyService
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
-ingredient_service = IngredientService()
 auth_service = AuthService()
+ingredient_service = IngredientService()
+weekly_service = WeeklyService()
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -121,7 +123,7 @@ async def ingredients(
         HTMLResponse: A rendered HTML template displaying the categorized ingredients.
 
     """
-    result = ingredient_service.process_recipes(recipes_text, have_at_home)
+    result = await ingredient_service.process_recipes(recipes_text, have_at_home)
     return templates.TemplateResponse(
         "_ingredients_partial.html.jinja",
         {
@@ -132,85 +134,64 @@ async def ingredients(
     )
 
 
-# TODO: build services logic, too much for route handlers
-# @app.get("/weekly", response_class=HTMLResponse)
-# @limiter.limit(GENERAL_RATE_LIMIT)
-# async def weekly(request: Request, _: str = Depends(get_current_user)):
-#     try:
-#         # Order by position to maintain user's preferred order
-#         weekly_table = (
-#             supabase.table("weekly").select("*").order("position", desc=False)
-#                     .execute()
-#         )
-#         links = weekly_table.data
-
-#         # Create meal plan structure directly from database data
-#         meal_plan: dict[str, dict[str, list[dict]]] = {}
-
-#         # Collect all days and meals that exist in the database
-#         for link in links:
-#             if not isinstance(link, dict) or "link" not in link:
-#                 continue
-
-#             day = link.get("day_name")
-#             meal = link.get("meal_type")
-
-#             if not day or not meal:
-#                 continue
-
-#             if day not in meal_plan:
-#                 meal_plan[day] = {}
-
-#             if meal not in meal_plan[day]:
-#                 meal_plan[day][meal] = []
-
-#             meal_plan[day][meal].append(link)
-
-#         return templates.TemplateResponse(
-#             "weekly.html.jinja",
-#             {"request": request, "data": meal_plan},
-#         )
-#     except Exception as e:
-#         return templates.TemplateResponse(
-#             "weekly.html.jinja",
-#             {
-#                 "request": request,
-#                 "data": {},
-#                 "error": f"Error loading weekly plan: {str(e)}"
-#             },
-#             status_code=500
-#         )
+@app.get(
+    "/weekly",
+    response_class=HTMLResponse,
+    dependencies=[Depends(general_rate_limit)],
+)
+async def weekly(request: Request, _: str = Depends(get_current_user)):
+    """Render the weekly plan page."""
+    try:
+        meal_plan = await weekly_service.get_weekly_meal_plan()
+        return templates.TemplateResponse(
+            "weekly.html.jinja",
+            {"request": request, "data": meal_plan},
+        )
+    except Exception as e:
+        return templates.TemplateResponse(
+            "error.html.jinja",
+            {
+                "request": request,
+                "error_message": str(e),
+                "error_title": "Weekly Meal Plan Error",
+            },
+            status_code=500,
+        )
 
 
-# @app.post("/update-weekly-positions")
-# async def update_weekly_positions(
-#     request: Request,
-#     _: str = Depends(get_current_user)
-# ):
-#     try:
-#         body = await request.json()
-#         updates = body.get("updates", [])
+@app.post("/swap-meals")
+async def swap_meals(request: Request, _: str = Depends(get_current_user)):
+    """Swap the positions of two meals in the weekly meal plan.
 
-#         for update in updates:
-#             item_id = update.get("id")
-#             new_position = update.get("position")
-#             day = update.get("day")
-#             meal = update.get("meal")
+    This endpoint allows users to reorder their weekly meal plan by swapping
+    the positions of two specified meals. The swap is performed by exchanging
+    the meal IDs while maintaining all other meal properties.
 
-#             # Skip placeholder items
-#             if not item_id or item_id in ["placeholder", "unknown"]:
-#                 continue
+    Args:
+        request (Request): The HTTP request object containing the JSON payload.
+        _ (str): The current authenticated user from dependency injection.
 
-#             # Update the position and location in database
-#             supabase.table("weekly").update({
-#                 "position": new_position,
-#                 "day_name": day,
-#                 "meal_type": meal
-#             }).eq("id", item_id).execute()
+    Request Body:
+        meal1_id (str): The ID of the first meal to swap.
+        meal2_id (str): The ID of the second meal to swap.
 
-#         return {"status": "success"}
-#     except Exception as e:
-#         return {"status": "error", "message": str(e)}
+    Returns:
+        dict: A JSON response containing the operation status and any relevant data
+              or error messages.
+
+    Raises:
+        Exception: If the swap operation fails due to invalid meal IDs or
+                  database errors.
+    """
+    try:
+        body = await request.json()
+        meal1_id = body.get("meal1_id")
+        meal2_id = body.get("meal2_id")
+
+        result = await weekly_service.swap_meal_positions(meal1_id, meal2_id)
+        return result
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/logout", response_class=HTMLResponse)

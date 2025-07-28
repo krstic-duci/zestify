@@ -63,4 +63,4 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = SUPABASE_SERVICE_ROLE_KEY
 
 
-settings = Settings()
+SETTINGS = Settings()

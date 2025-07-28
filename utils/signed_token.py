@@ -1,5 +1,5 @@
 from itsdangerous import URLSafeTimedSerializer
 
-from utils.config import settings
+from utils.config import SETTINGS
 
-serializer = URLSafeTimedSerializer(settings.auth_token_key)
+serializer = URLSafeTimedSerializer(SETTINGS.auth_token_key)

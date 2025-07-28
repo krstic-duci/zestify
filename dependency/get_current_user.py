@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Request, status
 from itsdangerous import BadSignature, SignatureExpired
 
-from utils.config import settings
+from utils.config import SETTINGS
 from utils.signed_token import serializer
 
 
@@ -31,7 +31,7 @@ def get_current_user(request: Request) -> str:
 
     try:
         # Verify the signed token
-        token_data = serializer.loads(auth_token, max_age=settings.max_age)
+        token_data = serializer.loads(auth_token, max_age=SETTINGS.max_age)
         return token_data["username"]
     except (BadSignature, SignatureExpired) as exc:
         raise HTTPException(
