@@ -2,13 +2,13 @@ from fastapi import Depends, FastAPI, Form, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from dependency.get_current_user import get_current_user
 from dependency.limiter import general_rate_limit, login_rate_limit
 from services.auth import AuthService
 from services.ingredients import IngredientService
 from services.weekly import WeeklyService
+from utils.config import SETTINGS
 from utils.error_handlers import (
     general_exception_handler,
     internal_server_error_handler,
@@ -17,12 +17,13 @@ from utils.error_handlers import (
     unauthorized_handler,
     validation_error_handler,
 )
+from utils.templates import templates
 
+# TODO: Error handling strategy is mixed
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
-
+# TODO: consider adding deps as Dependency Injection
 auth_service = AuthService()
 ingredient_service = IngredientService()
 weekly_service = WeeklyService()
@@ -190,6 +191,8 @@ async def swap_meals(request: Request, _: str = Depends(get_current_user)):
         dict: A JSON response containing the operation status.
 
     """
+
+    # TODO: use Pydantic model for request body validation
     body = await request.json()
     meal1_id = body.get("meal1_id")
     meal2_id = body.get("meal2_id")
@@ -209,7 +212,7 @@ async def logout():
 
     """
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie("auth_token")
+    response.delete_cookie(SETTINGS.cookie_name)
     return response
 
 

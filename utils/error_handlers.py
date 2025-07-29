@@ -1,10 +1,24 @@
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 
-templates = Jinja2Templates(directory="templates")
+from utils.templates import templates
 
+
+class WeeklyServiceError(Exception):
+    """Base exception for WeeklyService operations."""
+
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+class RecipeProcessingError(Exception):
+    """Custom exception for recipe processing errors."""
+
+    def __init__(self, message: str, original_error: Exception | None = None):
+        super().__init__(message)
+        self.original_error = original_error
 
 async def unauthorized_handler(request: Request, exc: HTTPException):
     """Handle 401 Unauthorized errors."""

@@ -56,7 +56,7 @@ class AuthService:
         signed_token = serializer.dumps({"username": username})
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
         response.set_cookie(
-            key="auth_token",
+            key=SETTINGS.cookie_name,
             value=signed_token,
             httponly=True,
             secure=True,

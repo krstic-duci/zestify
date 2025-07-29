@@ -22,7 +22,7 @@ def get_current_user(request: Request) -> str:
         HTTPException: If the authentication token is missing, invalid, or expired.
 
     """
-    auth_token = request.cookies.get("auth_token")
+    auth_token = request.cookies.get(SETTINGS.cookie_name)
     if not auth_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,14 +1,6 @@
 from db.conn import supabase
-from utils.position_mapping import POSITION_MAP
-
-
-class WeeklyServiceError(Exception):
-    """Base exception for WeeklyService operations."""
-
-    def __init__(self, message: str, status_code: int = 500):
-        super().__init__(message)
-        self.message = message
-        self.status_code = status_code
+from utils.constants import POSITION_MAP
+from utils.error_handlers import WeeklyServiceError
 
 
 class WeeklyService:
@@ -117,6 +109,7 @@ class WeeklyService:
         """
         try:
             # Order by position to maintain user's preferred order
+            # TODO: move supabase query to a separate file/method
             weekly_table = (
                 supabase.table("weekly").select("*").order("position", desc=False).execute()
             )
@@ -143,6 +136,7 @@ class WeeklyService:
                 status_code=500
             ) from e
 
+    # TODO: too long docstring
     async def swap_meal_positions(self, meal1_id: str, meal2_id: str) -> dict[str, str]:
         """Swap the positions of two meals in the weekly plan for drag-and-drop functionality.
 
@@ -196,6 +190,7 @@ class WeeklyService:
 
         try:
             # Get the positions of the two meals using 'id' column
+            # TODO: move supabase query to a separate file/method
             meal1_result = (
                 supabase.table("weekly")
                 .select("position")
@@ -203,6 +198,7 @@ class WeeklyService:
                 .limit(1)
                 .execute()
             )
+            # TODO: move supabase query to a separate file/method
             meal2_result = (
                 supabase.table("weekly")
                 .select("position")
@@ -218,9 +214,11 @@ class WeeklyService:
             meal2_pos = meal2_result.data[0]["position"]
 
             # Swap the positions using 'id' column
+            # TODO: move supabase query to a separate file/method
             supabase.table("weekly").update({"position": meal2_pos}).eq("id", meal1_id).execute()
             supabase.table("weekly").update({"position": meal1_pos}).eq("id", meal2_id).execute()
 
+            # TODO: use Pydantic model, also check if we're using this on FE
             return {"status": "success"}
 
         except Exception as e:

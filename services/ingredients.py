@@ -1,5 +1,4 @@
 import time
-from typing import ClassVar
 
 from bleach.sanitizer import Cleaner
 from google import genai
@@ -7,28 +6,26 @@ from google.genai.types import GenerateContentResponse
 
 from db.conn import supabase
 from utils.config import SETTINGS
-from utils.constants import LLM_MODEL
+from utils.constants import POSITION_MAP
+from utils.error_handlers import RecipeProcessingError
 
-
-class RecipeProcessingError(Exception):
-    """Custom exception for recipe processing errors."""
-
-    def __init__(self, message: str, original_error: Exception | None = None):
-        super().__init__(message)
-        self.original_error = original_error
-
-
+LLM_MODEL = "gemini-1.5-flash"
 CLIENT = genai.Client(api_key=SETTINGS.gemini_api_key)
-CLEANER = Cleaner(tags=SETTINGS.allowed_tags, strip=True)
-# NOTE: only for initial recipe copy/paste
+CLEANER = Cleaner(tags=["div", "h3", "ul", "li", "span", "button"], strip=True)
+# Defines day pairs for distributing recipes across the weekly meal plan.
+# Used by `_add_meals_with_day_pairing()` to assign up to 8 recipes across 14 meal slots.
 DAY_PAIRS = [
-    ("Monday", "Tuesday"),      # Pair 1: Mon-Tue (recipes 1-2)
-    ("Wednesday", "Thursday"),  # Pair 2: Wed-Thu (recipes 3-4)
-    ("Friday", "Saturday"),     # Pair 3: Fri-Sat (recipes 5-6)
-    ("Sunday", "Sunday"),       # Pair 4: Sunday only (recipes 7-8)
+    ("Monday", "Tuesday"),  # Pair 1: Mon-Tue
+    ("Wednesday", "Thursday"),  # Pair 2: Wed-Thu
+    ("Friday", "Saturday"),  # Pair 3: Fri-Sat
+    ("Sunday", "Sunday"),  # Pair 4: Sunday only
 ]
+# Meal types for the weekly meal plan
 MEALS = ["Lunch", "Dinner"]
-
+# Reverse mapping: (day_name, meal_type) -> position
+DAY_MEAL_TO_POSITION = {
+    (day, meal): position for position, (day, meal) in POSITION_MAP.items()
+}
 
 class IngredientService:
     """A service class for processing and managing ingredient-related operations.
@@ -44,17 +41,28 @@ class IngredientService:
 
     """
 
-    _client = CLIENT
-    _cleaner = CLEANER
-    _day_to_position: ClassVar[dict[str, int]] = {
-        "Monday": 0,
-        "Tuesday": 2,
-        "Wednesday": 4,
-        "Thursday": 6,
-        "Friday": 8,
-        "Saturday": 10,
-        "Sunday": 12,
-    }
+    def _get_position(self, day_name: str, meal_type: str) -> int:
+        """Get position for a given day and meal combination.
+
+        Args:
+            day_name (str): Name of the day (e.g., "Monday", "Tuesday")
+            meal_type (str): Type of meal ("Lunch" or "Dinner")
+
+        Returns:
+            int: The position index (0-13)
+
+        Raises:
+            ValueError: If the day/meal combination is not found
+        """
+        if meal_type not in MEALS:
+            valid_meals = ", ".join(MEALS)
+            raise ValueError(f"Invalid meal type '{meal_type}'. Must be one of: {valid_meals}")
+
+        key = (day_name, meal_type)
+        if key not in DAY_MEAL_TO_POSITION:
+            raise ValueError(f"Invalid day/meal combination: {day_name} {meal_type}")
+
+        return DAY_MEAL_TO_POSITION[key]
 
     def _extract_human_readable_response(
         self,
@@ -80,30 +88,19 @@ class IngredientService:
                 not model_response.candidates
                 or not model_response.candidates[0].content
                 or not model_response.candidates[0].content.parts
+                or not model_response.candidates[0].content.parts[0].text
             ):
-                return "No content found in the response (first try)."
-
-            content = model_response.candidates[0].content.parts[0].text
-            if not content:
                 return "No content found in the response."
 
-            # Remove opening code block markers
-            if content.startswith("```html"):
-                content = content[7:]
-            elif content.startswith("```"):
-                content = content[3:]
+            # Clean the response by removing code block delimiters
+            return (
+                model_response.candidates[0]
+                .content.parts[0]
+                .text.replace("```", "")
+                .replace("'''", "")
+                .strip()
+            )
 
-            # Remove closing code block markers from the end
-            if content.endswith("```"):
-                content = content[:-3]
-
-            # Remove any remaining triple backticks or single quotes that might appear
-            # in the middle of the content (common LLM artifact)
-            content = content.replace("```", "").replace("'''", "")
-
-            content = content.strip()
-
-            return content
         except (IndexError, AttributeError, TypeError):
             return "An error occurred while processing the response."
 
@@ -222,10 +219,10 @@ INGREDIENTS:
             # For each day in the pair, add the same recipe
             for day_name in day_pair:
                 # Calculate position for this specific day/meal combination
-                meal_offset = 0 if meal_type == "Lunch" else 1
-                position = self._day_to_position[day_name] + meal_offset
+                position = self._get_position(day_name, meal_type)
 
                 # Save with the calculated position
+                # TODO: move supabase query to a separate file/method
                 supabase.table("weekly").insert(
                     {
                         "link": item["url"],
@@ -282,6 +279,7 @@ INGREDIENTS:
 
         try:
             # TODO: don't like mixing DB and LLM logic
+            # TODO: move supabase query to a separate file/method
             supabase.table("weekly").delete().gt("position", -1).execute()
             self._add_meals_with_day_pairing(parsed_data)
 
@@ -290,7 +288,7 @@ INGREDIENTS:
 
             llm_start_time = time.time()
             model_response: GenerateContentResponse = (
-                await self._client.aio.models.generate_content(
+                await CLIENT.aio.models.generate_content(
                     model=LLM_MODEL,
                     contents=prompt,
                     config={"temperature": 0.2},
@@ -301,7 +299,7 @@ INGREDIENTS:
             raw_response = self._extract_human_readable_response(model_response)
 
             return {
-                "processed_data": self._cleaner.clean(raw_response),
+                "processed_data": CLEANER.clean(raw_response),
                 "llm_time": llm_duration,
             }
         except Exception as e:
