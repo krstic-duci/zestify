@@ -9,6 +9,7 @@ wheels/
 .ruff_cache/
 test.txt
 test_llm.py
+.DS_Store
 
 # Virtual environments
 .venv

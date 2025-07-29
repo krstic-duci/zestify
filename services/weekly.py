@@ -2,6 +2,15 @@ from db.conn import supabase
 from utils.position_mapping import POSITION_MAP
 
 
+class WeeklyServiceError(Exception):
+    """Base exception for WeeklyService operations."""
+
+    def __init__(self, message: str, status_code: int = 500):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+
 class WeeklyService:
     """Service for managing weekly meal plans and meal organization.
 
@@ -30,7 +39,6 @@ class WeeklyService:
     """
 
     def __init__(self) -> None:
-        """Initialize the WeeklyService with position mapping."""
         self.position_map = POSITION_MAP
 
     def _create_empty_meal_plan(self) -> dict[str, dict[str, list]]:
@@ -130,7 +138,10 @@ class WeeklyService:
             return meal_plan
 
         except Exception as e:
-            raise Exception(f"Error loading weekly meal plan: {e}") from e
+            raise WeeklyServiceError(
+                f"Error loading weekly meal plan: {e}",
+                status_code=500
+            ) from e
 
     async def swap_meal_positions(self, meal1_id: str, meal2_id: str) -> dict[str, str]:
         """Swap the positions of two meals in the weekly plan for drag-and-drop functionality.
@@ -180,10 +191,10 @@ class WeeklyService:
             else:
                 # Frontend shows error message from result["message"]
         """
-        try:
-            if not meal1_id or not meal2_id:
-                raise ValueError("Missing meal IDs")
+        if not meal1_id or not meal2_id:
+            raise ValueError("Missing meal IDs")
 
+        try:
             # Get the positions of the two meals using 'id' column
             meal1_result = (
                 supabase.table("weekly")
@@ -212,7 +223,5 @@ class WeeklyService:
 
             return {"status": "success"}
 
-        except ValueError as e:
-            return {"status": "error", "message": str(e)}
         except Exception as e:
-            return {"status": "error", "message": f"Database error: {e}"}
+            raise WeeklyServiceError(f"Database error during meal swap: {e}") from e

@@ -7,7 +7,9 @@ from fastapi.templating import Jinja2Templates
 from dependency.get_current_user import get_current_user
 from dependency.limiter import general_rate_limit, login_rate_limit
 from services.auth import AuthService
-from services.error_handlers import (
+from services.ingredients import IngredientService
+from services.weekly import WeeklyService
+from utils.error_handlers import (
     general_exception_handler,
     internal_server_error_handler,
     not_found_handler,
@@ -15,8 +17,6 @@ from services.error_handlers import (
     unauthorized_handler,
     validation_error_handler,
 )
-from services.ingredients import IngredientService
-from services.weekly import WeeklyService
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -66,6 +66,17 @@ async def login(
     application's stored credentials. If the credentials are valid, a signed
     authentication token is generated and set as a cookie in the response.
     Otherwise, the user is redirected back to the login page with an error message.
+
+    Args:
+        request (Request): The HTTP request object.
+        username (str): The username of the user attempting to log in.
+        password (str): The password of the user attempting to log in.
+
+    Returns:
+        HTMLResponse: A rendered HTML template for the login page with an error message
+                      if authentication fails, or a redirect response to the index page
+                      if authentication succeeds.
+
     """
     if not auth_service.check_user_credentials(username, password):
         return auth_service.create_error_response("Invalid username or password")
@@ -140,23 +151,23 @@ async def ingredients(
     dependencies=[Depends(general_rate_limit)],
 )
 async def weekly(request: Request, _: str = Depends(get_current_user)):
-    """Render the weekly plan page."""
-    try:
-        meal_plan = await weekly_service.get_weekly_meal_plan()
-        return templates.TemplateResponse(
-            "weekly.html.jinja",
-            {"request": request, "data": meal_plan},
-        )
-    except Exception as e:
-        return templates.TemplateResponse(
-            "error.html.jinja",
-            {
-                "request": request,
-                "error_message": str(e),
-                "error_title": "Weekly Meal Plan Error",
-            },
-            status_code=500,
-        )
+    """Render the weekly plan page.
+
+    This endpoint retrieves the weekly meal plan and renders it using a Jinja2 template.
+
+    Args:
+        request (Request): The HTTP request object.
+        _: str: The current user, obtained from the dependency injection.
+
+    Returns:
+        HTMLResponse: A rendered HTML template for the weekly meal plan page.
+
+    """
+    meal_plan = await weekly_service.get_weekly_meal_plan()
+    return templates.TemplateResponse(
+        "weekly.html.jinja",
+        {"request": request, "data": meal_plan},
+    )
 
 
 @app.post("/swap-meals")
@@ -169,29 +180,21 @@ async def swap_meals(request: Request, _: str = Depends(get_current_user)):
 
     Args:
         request (Request): The HTTP request object containing the JSON payload.
-        _ (str): The current authenticated user from dependency injection.
+        _: str: The current user, obtained from the dependency injection.
 
     Request Body:
         meal1_id (str): The ID of the first meal to swap.
         meal2_id (str): The ID of the second meal to swap.
 
     Returns:
-        dict: A JSON response containing the operation status and any relevant data
-              or error messages.
+        dict: A JSON response containing the operation status.
 
-    Raises:
-        Exception: If the swap operation fails due to invalid meal IDs or
-                  database errors.
     """
-    try:
-        body = await request.json()
-        meal1_id = body.get("meal1_id")
-        meal2_id = body.get("meal2_id")
+    body = await request.json()
+    meal1_id = body.get("meal1_id")
+    meal2_id = body.get("meal2_id")
 
-        result = await weekly_service.swap_meal_positions(meal1_id, meal2_id)
-        return result
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    return await weekly_service.swap_meal_positions(meal1_id, meal2_id)
 
 
 @app.get("/logout", response_class=HTMLResponse)

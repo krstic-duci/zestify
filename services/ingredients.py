@@ -9,8 +9,6 @@ from db.conn import supabase
 from utils.config import SETTINGS
 from utils.constants import LLM_MODEL
 
-# from utils.position_mapping import get_day_and_meal, normalize_position
-
 
 class RecipeProcessingError(Exception):
     """Custom exception for recipe processing errors."""
@@ -22,11 +20,12 @@ class RecipeProcessingError(Exception):
 
 CLIENT = genai.Client(api_key=SETTINGS.gemini_api_key)
 CLEANER = Cleaner(tags=SETTINGS.allowed_tags, strip=True)
+# NOTE: only for initial recipe copy/paste
 DAY_PAIRS = [
-    ("Monday", "Tuesday"),  # Pair 1: Mon-Tue (recipes 1-2)
+    ("Monday", "Tuesday"),      # Pair 1: Mon-Tue (recipes 1-2)
     ("Wednesday", "Thursday"),  # Pair 2: Wed-Thu (recipes 3-4)
-    ("Friday", "Saturday"),  # Pair 3: Fri-Sat (recipes 5-6)
-    ("Sunday", "Sunday"),  # Pair 4: Sunday only (recipes 7-8)
+    ("Friday", "Saturday"),     # Pair 3: Fri-Sat (recipes 5-6)
+    ("Sunday", "Sunday"),       # Pair 4: Sunday only (recipes 7-8)
 ]
 MEALS = ["Lunch", "Dinner"]
 
