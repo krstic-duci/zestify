@@ -7,8 +7,6 @@
 
         <div class="ai-timing-badge">
             <span class="timing-text">AI processed your recipes in {{ llm_time | round(2) }} seconds</span>
-            <span class="timing-emoji">
-                {% if llm_time < 2 %}⚡ {% elif llm_time < 4 %}🚀 {% else %}⏳ {% endif %} </span>
         </div>
 
         <div class="stats-bar" id="statsBar" style="display: none;">

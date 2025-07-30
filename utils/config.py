@@ -3,8 +3,6 @@ import os
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
-from .constants import ALLOWED_TAGS, COOKIE_MAX_AGE
-
 load_dotenv()
 
 
@@ -46,8 +44,8 @@ class Settings(BaseSettings):
         app_username (str): Username for the application.
         app_password (str): Hashed password for the application.
         auth_token_key (str): Key used for authentication tokens.
+        cookie_name (str): Name of the authentication cookie.
         max_age (int): Maximum age for cookies.
-        allowed_tags (list[str]): List of allowed tags.
         supabase_url (str): URL for the Supabase instance.
         supabase_service_role_key (str): Service role key for Supabase.
 
@@ -57,10 +55,10 @@ class Settings(BaseSettings):
     app_username: str = USERNAME
     app_password: str = HASHED_PASS
     auth_token_key: str = AUTH_TOKEN_KEY
-    max_age: int = COOKIE_MAX_AGE
-    allowed_tags: list[str] = ALLOWED_TAGS
+    cookie_name: str = "auth_token"
+    max_age: int = 86400  # 24 hours in seconds
     supabase_url: str = SUPABASE_URL
     supabase_service_role_key: str = SUPABASE_SERVICE_ROLE_KEY
 
 
-settings = Settings()
+SETTINGS = Settings()

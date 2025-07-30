@@ -1,0 +1,197 @@
+.hidden {
+    display: none !important;
+}
+
+.weekly-container {
+    max-width: 90rem;
+    margin: 0 auto;
+}
+
+.weekly-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--spacing-md);
+    padding: var(--spacing-xl) 0;
+}
+
+.day-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    min-height: 16rem;
+}
+
+.day-card h3 {
+    color: var(--accent-blue);
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    margin: 0 0 var(--spacing-lg) 0;
+    text-align: center;
+}
+
+.meal-section {
+    background: var(--surface-bg);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    min-height: 4.5rem;
+}
+
+.meal-section:last-child {
+    margin-bottom: 0;
+}
+
+.meal-section:hover {
+    border-color: var(--accent-blue);
+}
+
+.meal-section h4 {
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin: 0 0 var(--spacing-sm) 0;
+    text-align: left;
+}
+
+.recipe-item {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: 0;
+    text-decoration: none;
+    color: var(--text-primary);
+    min-height: 3rem;
+    cursor: pointer;
+    gap: var(--spacing-sm);
+    width: 100%;
+    max-width: 100%;
+    flex: 1;
+}
+
+.recipe-text {
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.4;
+    min-width: 0;
+}
+
+.recipe-item:last-child {
+    margin-bottom: 0;
+}
+
+.recipe-item:hover {
+    text-decoration: none;
+    background: var(--surface-bg);
+    border-color: var(--accent-blue);
+}
+
+.drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    color: var(--text-secondary);
+    font-size: var(--font-size-lg);
+    font-weight: bold;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.drag-handle:hover {
+    color: var(--accent-blue);
+}
+
+.drag-handle::before {
+    content: "☰";
+    transform: rotate(90deg);
+    display: block;
+    font-size: 1.2em;
+}
+
+.no-recipe {
+    background: transparent !important;
+    border: 2px dashed var(--border-color) !important;
+    color: var(--text-secondary);
+    font-style: italic;
+    cursor: default;
+    text-align: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+}
+
+.no-recipe:hover {
+    border-color: var(--accent-blue) !important;
+    background: var(--hover-bg) !important;
+}
+
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--spacing-xl);
+    gap: var(--spacing-md);
+}
+
+.back-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.back-link:hover {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    background: var(--surface-bg);
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--accent-blue) !important;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .weekly-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) 0;
+    }
+
+    .recipe-item {
+        min-height: 4rem;
+    }
+
+    .navigation {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .back-link {
+        justify-content: center;
+    }
+}
+
+@media (pointer: coarse) {
+    .recipe-item {
+        min-height: 4rem;
+        font-size: var(--font-size-md);
+    }
+}
