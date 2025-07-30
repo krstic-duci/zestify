@@ -3,6 +3,7 @@ from utils.constants import POSITION_MAP
 from utils.error_handlers import WeeklyServiceError
 
 
+# TODO: too long docstring, unify them in services
 class WeeklyService:
     """Service for managing weekly meal plans and meal organization.
 
@@ -186,7 +187,7 @@ class WeeklyService:
                 # Frontend shows error message from result["message"]
         """
         if not meal1_id or not meal2_id:
-            raise ValueError("Missing meal IDs")
+            raise ValueError("Both meal1_id and meal2_id are required")
 
         try:
             # Get the positions of the two meals using 'id' column
@@ -198,6 +199,9 @@ class WeeklyService:
                 .limit(1)
                 .execute()
             )
+            if not meal1_result.data:
+                raise ValueError(f"Meal with ID {meal1_id} not found")
+
             # TODO: move supabase query to a separate file/method
             meal2_result = (
                 supabase.table("weekly")
@@ -207,8 +211,8 @@ class WeeklyService:
                 .execute()
             )
 
-            if not meal1_result.data or not meal2_result.data:
-                raise ValueError("One or both meals not found")
+            if not meal2_result.data:
+                raise ValueError(f"Meal with ID {meal2_id} not found")
 
             meal1_pos = meal1_result.data[0]["position"]
             meal2_pos = meal2_result.data[0]["position"]

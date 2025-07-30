@@ -20,6 +20,7 @@ from utils.error_handlers import (
 from utils.templates import templates
 
 # TODO: Error handling strategy is mixed
+# TODO: Add some sorts of tests for the endpoints, E2E and even JS
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

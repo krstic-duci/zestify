@@ -1,10 +1,6 @@
-// Weekly meal planning functionality
-
 document.addEventListener('DOMContentLoaded', function () {
-    // DOM elements
     const mealSections = document.querySelectorAll('.sortable-meal');
 
-    // Initialize SortableJS for drag and drop
     function initializeSortable() {
         mealSections.forEach(section => {
             Sortable.create(section, {
@@ -22,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Handle the meal swap
     async function handleMealSwap(evt) {
         const draggedItem = evt.item;
         const fromContainer = evt.from;
@@ -35,29 +30,32 @@ document.addEventListener('DOMContentLoaded', function () {
         let meal2_id = null;
         const targetIndex = evt.newIndex;
         
-        // Get all items in the target container
+        // Get all items in the target container, excluding the dragged item
         const targetItems = Array.from(toContainer.children).filter(child => 
-            child.dataset && child.dataset.mealId
+            child.dataset && child.dataset.mealId && child !== draggedItem
         );
         
-        if (targetItems.length > 1) {
+        // Determine meal2_id based on the drop position
+        if (targetItems.length > 0) {
             if (targetIndex === 0) {
-                // If dropped at the beginning, use the second item
-                meal2_id = targetItems[1].dataset.mealId;
-            } else if (targetIndex >= targetItems.length - 1) {
-                // If dropped at the end, use the second-to-last item
-                meal2_id = targetItems[targetItems.length - 2].dataset.mealId;
+                // If dropped at the beginning, use the first item in the target container
+                meal2_id = targetItems[0].dataset.mealId;
+            } else if (targetIndex >= targetItems.length) {
+                // If dropped at the end, use the last item in the target container
+                meal2_id = targetItems[targetItems.length - 1].dataset.mealId;
             } else {
-                // If dropped in the middle, use the item after
-                meal2_id = targetItems[targetIndex + 1].dataset.mealId;
+                // If dropped in the middle, use the item at the target index
+                meal2_id = targetItems[targetIndex].dataset.mealId;
             }
-        } else if (targetItems.length === 1) {
-            // If only one item, we'll set it as empty position
-            meal2_id = null;
+        } else {
+            // If no valid target items are found, log an error and exit
+            handleError(null, "No valid meal found at the target position. Please try again.");
+            return;
         }
         
-        if (!meal1_id) {
-            console.error('No meal ID found for dragged item');
+        // Validate that both meal1_id and meal2_id are present
+        if (!meal1_id || !meal2_id) {
+            handleError(null, "Unable to swap meals. Please ensure both meals are valid.");
             return;
         }
         
@@ -77,29 +75,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Optionally refresh the page to show updated positions
                 location.reload();
             } else {
-                console.error('Meal swap failed:', result.message);
+                handleError(null, `Meal swap failed: ${result.message}`);
                 // Revert the drag operation
                 revertSwap(draggedItem, fromContainer, toContainer);
             }
         } catch (error) {
-            console.error('Error during meal swap:', error);
+            handleError(error, 'Error during meal swap');
             // Revert the drag operation
             revertSwap(draggedItem, fromContainer, toContainer);
         }
     }
 
-    // Revert a failed swap operation
     function revertSwap(draggedItem, fromContainer, toContainer) {
         if (fromContainer !== toContainer) {
             fromContainer.appendChild(draggedItem);
         }
     }
 
-    // Error handling utility
     function handleError(error, userMessage = 'An error occurred') {
         console.error('Error:', error);
         
-        // Show user-friendly error message
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-notification';
         errorDiv.style.cssText = `
@@ -117,7 +112,6 @@ document.addEventListener('DOMContentLoaded', function () {
         
         document.body.appendChild(errorDiv);
         
-        // Remove after 5 seconds
         setTimeout(() => {
             if (errorDiv.parentNode) {
                 errorDiv.parentNode.removeChild(errorDiv);
@@ -125,11 +119,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     }
 
-    // Initialize all functionality
     function init() {
         initializeSortable();
     }
 
-    // Start the application
     init();
 });

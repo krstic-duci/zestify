@@ -27,6 +27,7 @@ DAY_MEAL_TO_POSITION = {
     (day, meal): position for position, (day, meal) in POSITION_MAP.items()
 }
 
+# TODO: too long docstring, unify them in services
 class IngredientService:
     """A service class for processing and managing ingredient-related operations.
 
@@ -93,13 +94,14 @@ class IngredientService:
                 return "No content found in the response."
 
             # Clean the response by removing code block delimiters
-            return (
+            cleaned_content = (
                 model_response.candidates[0]
                 .content.parts[0]
                 .text.replace("```", "")
                 .replace("'''", "")
                 .strip()
             )
+            return cleaned_content
 
         except (IndexError, AttributeError, TypeError):
             return "An error occurred while processing the response."

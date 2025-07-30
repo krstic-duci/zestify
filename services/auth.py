@@ -8,6 +8,7 @@ from utils.signed_token import serializer
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+# TODO: too long docstring, unify them in services
 class AuthService:
     """A service class for handling authentication-related operations.
 
