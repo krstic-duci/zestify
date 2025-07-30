@@ -1,9 +1,6 @@
-/* Utility classes */
 .hidden {
     display: none !important;
 }
-
-/* Weekly meal planning styles */
 
 .weekly-container {
     max-width: 90rem;
@@ -24,8 +21,6 @@
     border: 1px solid var(--border-color);
     min-height: 16rem;
 }
-
-/* Layout */
 
 .day-card h3 {
     color: var(--accent-blue);
@@ -164,7 +159,6 @@
     background: var(--surface-bg);
 }
 
-/* Sortable styles */
 .sortable-ghost {
     opacity: 0.4;
     background: var(--accent-blue) !important;
@@ -174,7 +168,6 @@
     opacity: 0.8;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
     .weekly-grid {
         grid-template-columns: 1fr;
