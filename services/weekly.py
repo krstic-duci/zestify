@@ -3,7 +3,7 @@ from utils.constants import POSITION_MAP
 from utils.error_handlers import WeeklyServiceError
 
 
-# TODO: too long docstring, unify them in services
+# TODO: too long docstring, unify them in services (look in auth.py)
 class WeeklyService:
     """Service for managing weekly meal plans and meal organization.
 

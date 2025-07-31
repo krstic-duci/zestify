@@ -27,7 +27,7 @@ DAY_MEAL_TO_POSITION = {
     (day, meal): position for position, (day, meal) in POSITION_MAP.items()
 }
 
-# TODO: too long docstring, unify them in services
+# TODO: too long docstring, unify them in services (look in auth.py)
 class IngredientService:
     """A service class for processing and managing ingredient-related operations.
 

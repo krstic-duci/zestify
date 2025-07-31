@@ -8,27 +8,44 @@ from utils.signed_token import serializer
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# TODO: too long docstring, unify them in services
 class AuthService:
-    """A service class for handling authentication-related operations.
-
-    Methods
-    -------
-    check_user_credentials(username: str, password: str) -> bool
-        Validates the provided username and password against the configured settings.
-
-    create_auth_cookie(username: str) -> RedirectResponse
-        Creates a signed authentication token and sets it as a cookie in the response.
-
-    create_error_response(error_message: str) -> RedirectResponse
-        Redirects to the login page with an error message in the query string.
-
     """
+    Service for handling authentication logic, including user credential validation,
+    password verification, and authentication cookie management.
 
+    Responsibilities:
+        - Validate user credentials against configured username and hashed password.
+        - Generate and set signed authentication cookies for session management.
+        - Provide error responses for failed authentication attempts.
+
+    Methods:
+        _check_password(plain_password): Verify a plain password against the stored hash.
+        _check_username(username): Check if the username matches the configured value.
+        check_user_credentials(username, password): Validate both username and password.
+        create_auth_cookie(username): Create and set a signed authentication cookie.
+        create_error_response(error_message): Redirect to login with an error message.
+    """
     def _check_password(self, plain_password: str) -> bool:
+        """Check if the provided plain password matches the stored hashed password.
+
+        Args:
+            plain_password (str): The plain text password to check.
+
+        Returns:
+            bool: True if the password is valid, False otherwise.
+
+        """
         return pwd_context.verify(plain_password, SETTINGS.app_password)
 
     def _check_username(self, username: str) -> bool:
+        """Check if the provided username matches the configured application username.
+
+        Args:
+            username (str): The username to check.
+        Returns:
+            bool: True if the username matches, False otherwise.
+
+        """
         return username == SETTINGS.app_username
 
     def check_user_credentials(self, username: str, password: str) -> bool:
@@ -60,7 +77,7 @@ class AuthService:
             key=SETTINGS.cookie_name,
             value=signed_token,
             httponly=True,
-            secure=True,
+            secure=(SETTINGS.env == "prod"),
             samesite="strict",
             max_age=SETTINGS.max_age,
         )

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     auth_token_key: str = AUTH_TOKEN_KEY
     cookie_name: str = "auth_token"
     max_age: int = 86400  # 24 hours in seconds
+    env: str = "dev"
     supabase_url: str = SUPABASE_URL
     supabase_service_role_key: str = SUPABASE_SERVICE_ROLE_KEY
 
