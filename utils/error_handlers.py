@@ -47,7 +47,6 @@ async def unauthorized_handler(request: Request, exc: HTTPException):
 
 async def not_found_handler(request: Request, exc: HTTPException):
     accept = request.headers.get("accept", "")
-    print(accept)
     if "application/json" in accept:
         return JSONResponse(
             {

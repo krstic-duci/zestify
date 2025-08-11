@@ -119,11 +119,8 @@ class WeeklyService:
                     },
                 }
 
-            print("HERERER")
             meal1_pos = meal1_result[0]["position"]
             meal2_pos = meal2_result[0]["position"]
-
-            print(meal1_pos, meal2_pos)
 
             self.weekly_repository.update_position(str(meal1_id), meal2_pos)
             self.weekly_repository.update_position(str(meal2_id), meal1_pos)
