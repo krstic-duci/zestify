@@ -9,7 +9,7 @@
             <span class="timing-text">AI processed your recipes in {{ llm_time | round(2) }} seconds</span>
         </div>
 
-        <div class="stats-bar" id="statsBar" style="display: none;">
+        <div class="stats-bar" id="statsBar">
             <div class="stat-item">
                 <div class="stat-number" id="totalItems">0</div>
                 <div class="stat-label">Total Items</div>
@@ -23,10 +23,5 @@
         <div id="resultsContent">
             {{ data | safe }}
         </div>
-    </div>
-
-    <div class="navigation">
-        <button type="button" id="clearResultsBtn" class="back-link">← Clear Results</button>
-        <!-- <a href="/weekly" class="weekly-link">Weekly Plan →</a> -->
     </div>
 </div>

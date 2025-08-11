@@ -10,9 +10,10 @@
 {% block header_title %}Weekly plan{% endblock %}
 
 {% block content %}
+{% set days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
 <div class="weekly-container">
     <div class="weekly-grid" id="weekly-grid">
-        {% for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] %}
+        {% for day in days_of_week %}
         <div class="day-card" data-day="{{ day }}">
             <h3>{{ day }}</h3>
 

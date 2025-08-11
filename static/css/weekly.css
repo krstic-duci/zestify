@@ -18,7 +18,7 @@
     background: var(--card-bg);
     border-radius: var(--border-radius);
     padding: var(--spacing-lg);
-    border: 1px solid var(--border-color);
+    border: 0.0625rem solid var(--border-color);
     min-height: 16rem;
 }
 
@@ -35,7 +35,7 @@
     border-radius: var(--border-radius-sm);
     padding: var(--spacing-md);
     margin-bottom: var(--spacing-md);
-    border: 1px solid var(--border-color);
+    border: 0.0625rem solid var(--border-color);
     min-height: 4.5rem;
 }
 
@@ -59,7 +59,7 @@
     display: flex;
     align-items: center;
     background: var(--card-bg);
-    border: 1px solid var(--border-color);
+    border: 0.0625rem solid var(--border-color);
     border-radius: var(--border-radius-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     margin-bottom: 0;
@@ -117,7 +117,7 @@
 
 .no-recipe {
     background: transparent !important;
-    border: 2px dashed var(--border-color) !important;
+    border: 0.125rem dashed var(--border-color) !important;
     color: var(--text-secondary);
     font-style: italic;
     cursor: default;
@@ -131,14 +131,6 @@
     background: var(--hover-bg) !important;
 }
 
-.navigation {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: var(--spacing-xl);
-    gap: var(--spacing-md);
-}
-
 .back-link {
     color: var(--text-secondary);
     text-decoration: none;
@@ -146,7 +138,7 @@
     font-weight: 500;
     padding: var(--spacing-sm) var(--spacing-lg);
     border-radius: var(--border-radius-sm);
-    border: 1px solid var(--border-color);
+    border: 0.0625rem solid var(--border-color);
     background: var(--card-bg);
     display: flex;
     align-items: center;
@@ -168,7 +160,7 @@
     opacity: 0.8;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 48rem) {
     .weekly-grid {
         grid-template-columns: 1fr;
         gap: var(--spacing-sm);

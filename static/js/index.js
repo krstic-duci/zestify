@@ -196,56 +196,46 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Form submission with loading state
     document.getElementById('recipeForm').addEventListener('submit', async function (event) {
+        /**
+         * Handles form submission for ingredient processing.
+         * Calls the backend API and displays results or error banners.
+         * On error, preserves textarea contents and shows a notification.
+         */
         event.preventDefault();
         const button = document.querySelector('.submit-btn');
-        const originalText = button.textContent;
         const resultsContainer = document.getElementById('results-container');
         const recipesTextarea = document.getElementById('recipes_text');
         const haveAtHomeTextarea = document.getElementById('have_at_home');
 
-        // 1. Clear old results and show loader
-        resultsContainer.innerHTML = '<div class="loader"></div>';
-        resultsContainer.classList.remove('has-results');
-
         button.disabled = true;
-        button.textContent = "Processing...";
+        resultsContainer.innerHTML = '';
 
-        try {
-            const formData = new FormData(this);
-            const response = await fetch('/ingredients', {
-                method: 'POST',
-                body: formData,
-            });
+        const formData = new FormData(this);
+        const data = {
+            recipes_text: formData.get('recipes_text'),
+            have_at_home: formData.get('have_at_home'),
+        };
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-            }
+        const response = await apiClient('/ingredients', { body: data });
 
-            const html = await response.text();
-            resultsContainer.innerHTML = html;
-            resultsContainer.classList.add('has-results'); // Add class for styling
+        if (response.status === 'error') {
+            // Show error banner, preserve textarea contents
+            const errorMsg = response?.error?.message || response?.message || 'An error occurred.';
+            showGlobalNotification(errorMsg);
+            button.disabled = false;
+            return;
+        }
 
-            // Initialize the new content
+        if (response.status === 'success') {
+            resultsContainer.innerHTML = response.data?.ingredients_html || '';
             initializeResults(resultsContainer);
-
-            // 2. Clear textareas on success
             recipesTextarea.value = '';
             haveAtHomeTextarea.value = '';
-
-            // 3. Scroll to results
             resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-        } catch (error) {
-            console.error('Error fetching ingredients:', error);
-            resultsContainer.innerHTML = `<div class="error-message">Failed to load results. ${error.message}</div>`;
-            resultsContainer.classList.add('has-results');
-        } finally {
-            button.disabled = false;
-            button.textContent = originalText;
         }
+
+        button.disabled = false;
     });
 
     // Live formatting hints
