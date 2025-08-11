@@ -1,88 +1,89 @@
+import logging
 import time
 
 from bleach.sanitizer import Cleaner
+from fastapi import status
 from google import genai
 from google.genai.types import GenerateContentResponse
 
-from db.conn import supabase
+from db.ingredients_repository import IngredientsRepository
+from schemas.ingredients import IngredientsRequest
 from utils.config import SETTINGS
-from utils.constants import POSITION_MAP
-from utils.error_handlers import RecipeProcessingError
+from utils.constants import (
+    MEAL_TYPES,
+    POSITION_MAP,
+)
+from utils.error_codes import ErrorCode
 
-LLM_MODEL = "gemini-1.5-flash"
-CLIENT = genai.Client(api_key=SETTINGS.gemini_api_key)
-CLEANER = Cleaner(tags=["div", "h3", "ul", "li", "span", "button"], strip=True)
-# Defines day pairs for distributing recipes across the weekly meal plan.
-# Used by `_add_meals_with_day_pairing()` to assign up to 8 recipes across 14 meal slots.
-DAY_PAIRS = [
-    ("Monday", "Tuesday"),  # Pair 1: Mon-Tue
-    ("Wednesday", "Thursday"),  # Pair 2: Wed-Thu
-    ("Friday", "Saturday"),  # Pair 3: Fri-Sat
-    ("Sunday", "Sunday"),  # Pair 4: Sunday only
-]
-# Meal types for the weekly meal plan
-MEALS = ["Lunch", "Dinner"]
-# Reverse mapping: (day_name, meal_type) -> position
-DAY_MEAL_TO_POSITION = {
-    (day, meal): position for position, (day, meal) in POSITION_MAP.items()
-}
+logger = logging.getLogger(__name__)
 
-# TODO: too long docstring, unify them in services (look in auth.py)
+
 class IngredientService:
-    """A service class for processing and managing ingredient-related operations.
+    """
+    Service for processing and managing ingredient-related operations.
 
-    Methods
-    -------
-    process_recipes(
-        recipes_text: str,
-        have_at_home: str | None = None
-    ) -> dict[str, str | float]
-        Processes the recipes text and returns sanitized HTML with categorized
-        ingredients.
+    Responsibilities:
+        - Extract and categorize ingredients from recipes using Gemini API.
+        - Distribute recipes across weekly meal plan with day-pairing logic.
+        - Sanitize and parse recipe input for safe processing.
+        - Format business logic and API responses for /ingredients route.
 
+    Methods:
+        _get_position(day_name, meal_type): Return position index for day/meal.
+        _extract_human_readable_response(model_response): Clean Gemini API response.
+        _parse_input_to_list(input_text): Parse input text into recipe dicts.
+        _create_ingredient_prompt(ingredients_text, have_at_home): Build Gemini prompt.
+        _add_meals_with_day_pairing(parsed_data): Distribute recipes in meal plan.
+        _initialize_llm_client(): Initialize Gemini API client.
+        _initialize_html_cleaner(): Initialize HTML cleaner for LLM responses.
+        _clean_input_texts(recipes_text, have_at_home): Clear and normalize input texts.
+        _generate_shopping_list(ingredients): Create a shopping list from extracted ingredients.
+        process_recipes(recipes_text, have_at_home): Extract and categorize ingredients.
+        handle_ingredients_request(ingredients_request): Format response for /ingredients.
     """
 
+    def __init__(self, ingredients_repository: IngredientsRepository | None = None):
+        self.ingredients_repository = ingredients_repository or IngredientsRepository()
+
     def _get_position(self, day_name: str, meal_type: str) -> int:
-        """Get position for a given day and meal combination.
+        """
+        Return the position index for a given day and meal type.
 
         Args:
-            day_name (str): Name of the day (e.g., "Monday", "Tuesday")
-            meal_type (str): Type of meal ("Lunch" or "Dinner")
+            day_name (str): Name of the day (e.g., "Monday").
+            meal_type (str): Type of meal ("Lunch" or "Dinner").
 
         Returns:
-            int: The position index (0-13)
-
-        Raises:
-            ValueError: If the day/meal combination is not found
+            int: Position index (0-13).
         """
-        if meal_type not in MEALS:
-            valid_meals = ", ".join(MEALS)
-            raise ValueError(f"Invalid meal type '{meal_type}'. Must be one of: {valid_meals}")
+        # Reverse mapping: (day_name, meal_type) -> position
+        day_meal_to_position = {
+            (day, meal): position for position, (day, meal) in POSITION_MAP.items()
+        }
+        if meal_type not in MEAL_TYPES:
+            valid_meals = ", ".join(MEAL_TYPES)
+            raise ValueError(
+                f"Invalid meal type '{meal_type}'. Must be one of: {valid_meals}"
+            )
 
         key = (day_name, meal_type)
-        if key not in DAY_MEAL_TO_POSITION:
+        if key not in day_meal_to_position:
             raise ValueError(f"Invalid day/meal combination: {day_name} {meal_type}")
 
-        return DAY_MEAL_TO_POSITION[key]
+        return day_meal_to_position[key]
 
     def _extract_human_readable_response(
         self,
         model_response: GenerateContentResponse,
     ) -> str:
-        """Extract and clean the response content from the Gemini API.
-
-        This function processes the response from the Gemini API, extracting the
-        relevant content from the first candidate's content parts. It also removes
-        any Markdown-style code block delimiters (e.g., ```html, ```, ''') if present.
+        """
+        Extract and clean the response content from the Gemini API.
 
         Args:
-            model_response: The response object returned by the Gemini API, which
-                            contains a list of candidates with content.
+            model_response (GenerateContentResponse): Gemini API response object.
 
         Returns:
-            str: The cleaned content extracted from the response, or an error
-                 message if the extraction fails.
-
+            str: Cleaned content or error message.
         """
         try:
             if (
@@ -102,19 +103,18 @@ class IngredientService:
                 .strip()
             )
             return cleaned_content
-
         except (IndexError, AttributeError, TypeError):
             return "An error occurred while processing the response."
 
     def _parse_input_to_list(self, input_text: str) -> list[dict[str, str]]:
-        """Parse the input text into a list of dictionaries with 'url' and 'ingredients' keys.
+        """
+        Parse the input text into a list of recipe dictionaries.
 
         Args:
-            input_text (str): The raw input text from the frontend.
+            input_text (str): Raw input text from frontend.
 
         Returns:
-            list[dict[str, str]]: A list of dictionaries with 'url' and 'ingredients' keys.
-
+            list[dict[str, str]]: List of dicts with 'url' and 'ingredients'.
         """
         # Split the input into sections based on "# URL"
         sections = input_text.split("\n# ")
@@ -147,162 +147,203 @@ class IngredientService:
     def _create_ingredient_prompt(
         self, ingredients_text: str, have_at_home: str | None = None
     ) -> str:
-        """Create an optimized prompt for ingredient extraction using only ingredients.
+        """
+        Build an optimized prompt for Gemini ingredient extraction.
 
         Args:
-            ingredients_text (str): The cleaned and structured ingredients text.
-            have_at_home (str | None): Optional string of items the user already has at
-            home.
+            ingredients_text (str): Structured ingredients text.
+            have_at_home (str | None): Items user already has.
 
         Returns:
-            str: The optimized prompt for the Gemini API.
-
+            str: Prompt for Gemini API.
         """
         have_at_home_section = f"\n\nSKIP: {have_at_home}" if have_at_home else ""
 
         return f"""Create a shopping list. AGGREGATE identical ingredients by adding quantities, then categorize into: Meat/Fish, Veggies, Dairy, Other. Use Swedish names.
 
-AGGREGATION RULES:
-- Match core ingredient names (ignore variations like "färsk", "fast", percentages)
-- Add ALL quantities: 2dl + 1dl + 1dl = 4dl
-- Convert units smartly: 1000g = 1kg, 500ml = 5dl
-- Group similar items: combine cheeses, herbs, etc.
-- NEVER list same ingredient twice
+            AGGREGATION RULES:
+            - Match core ingredient names (ignore variations like "färsk", "fast", percentages)
+            - Add ALL quantities: 2dl + 1dl + 1dl = 4dl
+            - Convert units smartly: 1000g = 1kg, 500ml = 5dl
+            - Group similar items: combine cheeses, herbs, etc.
+            - NEVER list same ingredient twice
 
-EXCLUDE pantry basics: spices, oils, condiments, water, vinegar, seasonings
+            EXCLUDE pantry basics: spices, oils, condiments, water, vinegar, seasonings
 
-Format exactly like this:
-<div><h3>Meat/Fish</h3><ul><li>500g kött</li></ul><h3>Veggies</h3><ul><li>1800g potatis</li></ul><h3>Dairy</h3><ul><li>5dl gräddfil</li></ul><h3>Other</h3><ul><li>pasta</li></ul></div>
+            Format exactly like this:
+            <div><h3>Meat/Fish</h3><ul><li>500g kött</li></ul><h3>Veggies</h3><ul><li>1800g potatis</li></ul><h3>Dairy</h3><ul><li>5dl gräddfil</li></ul><h3>Other</h3><ul><li>pasta</li></ul></div>
 
-INGREDIENTS:
-{ingredients_text}{have_at_home_section}"""
+            INGREDIENTS:
+            {ingredients_text}{have_at_home_section}"""
 
     def _add_meals_with_day_pairing(self, parsed_data: list[dict[str, str]]) -> None:
-        """Add meals to the weekly table using day-pairing logic for initial setup.
-
-        This method distributes recipes across a weekly meal plan using a specific
-        pairing strategy where certain days share the same recipes. The system
-        handles up to 8 recipes, covering all 14 meal slots (7 days x 2 meals).
-
-        Day Pairing Strategy:
-            - Monday/Tuesday: Share recipes 1-2 (Lunch/Dinner)
-            - Wednesday/Thursday: Share recipes 3-4 (Lunch/Dinner)
-            - Friday/Saturday: Share recipes 5-6 (Lunch/Dinner)
-            - Sunday: Uses recipes 7-8 (Lunch/Dinner) independently
-
-        Position Mapping:
-            Each day/meal combination maps to a specific position:
-            - Monday: 0 (Lunch), 1 (Dinner)
-            - Tuesday: 2 (Lunch), 3 (Dinner)
-            - ... and so on through Sunday: 12 (Lunch), 13 (Dinner)
+        """
+        Distribute recipes across weekly meal plan using day-pairing logic.
 
         Args:
-            parsed_data: List of dictionaries containing recipe data. Each dict
-                        must have 'url' and 'ingredients' keys. Recipes are
-                        processed in order, with index determining day/meal assignment.
-
-        Raises:
-            Exception: If database insert operations fail.
-
-        Note:
-            If more than 8 recipes are provided, the method wraps around using
-            modulo arithmetic to reuse the day pairs.
+            parsed_data (list[dict[str, str]]): List of recipe dicts.
         """
+        # Defines day pairs for distributing recipes across the weekly meal plan.
+        # Used to assign up to 8 recipes across 14 meal slots.
+        day_pairs = [
+            ("Monday", "Tuesday"),  # Pair 1: Mon-Tue
+            ("Wednesday", "Thursday"),  # Pair 2: Wed-Thu
+            ("Friday", "Saturday"),  # Pair 3: Fri-Sat
+            ("Sunday", "Sunday"),  # Pair 4: Sunday only
+        ]
         for index, item in enumerate(parsed_data):
-            pair_index = index // 2  # Which day pair (0-3)
-            meal_index = index % 2  # Which meal (0=Lunch, 1=Dinner)
-
-            if pair_index >= len(DAY_PAIRS):
-                pair_index %= len(DAY_PAIRS)  # Wrap around if more than 8 recipes
-
-            day_pair = DAY_PAIRS[pair_index]
-            meal_type = MEALS[meal_index]
-
-            # For each day in the pair, add the same recipe
+            pair_index = index // 2
+            meal_index = index % 2
+            if pair_index >= len(day_pairs):
+                pair_index %= len(day_pairs)
+            day_pair = day_pairs[pair_index]
+            meal_type = MEAL_TYPES[meal_index]
             for day_name in day_pair:
-                # Calculate position for this specific day/meal combination
                 position = self._get_position(day_name, meal_type)
-
-                # Save with the calculated position
-                # TODO: move supabase query to a separate file/method
-                supabase.table("weekly").insert(
-                    {
-                        "link": item["url"],
-                        "position": position,
-                        "day_name": day_name,
-                        "meal_type": meal_type,
-                    }
-                ).execute()
-
-                # Break for Sunday since it's not actually paired
+                self.ingredients_repository.insert_weekly_meal(
+                    item["url"], position, day_name, meal_type
+                )
                 if day_name == "Sunday":
                     break
 
-    def _validate_recipes_text(self, recipes_text: str) -> None:
-        """Validate the recipes text input.
+    def _initialize_llm_client(self) -> genai.Client:
+        """Initialize Gemini API client with settings."""
+        return genai.Client(api_key=SETTINGS.gemini_api_key)
 
+    def _initialize_html_cleaner(self) -> Cleaner:
+        """Initialize HTML cleaner for sanitizing LLM responses."""
+        return Cleaner(tags=["div", "h3", "ul", "li", "span", "button"], strip=True)
+
+    def _clean_input_texts(self, recipes_text: str, have_at_home: str | None) -> dict:
+        """Clean and normalize input texts.
         Args:
-            recipes_text (str): The raw recipes text to validate.
-
-        Raises:
-            ValueError: If the input is invalid.
-
-        """
-        if not recipes_text.strip():
-            raise ValueError("Please provide some recipes text.")
-        if len(recipes_text) < 10:
-            raise ValueError("Recipes text must be at least 10 characters long.")
-
-    async def process_recipes(
-        self, recipes_text: str, have_at_home: str | None = None
-    ) -> dict[str, str | float]:
-        """Process recipes and return sanitized HTML.
-
-        This method takes the recipes text input, creates a prompt for the Gemini API,
-        and returns a cleaned and categorized list of ingredients.
-
-        Args:
-            recipes_text: The raw recipes text to process.
-            have_at_home: Optional string of items the user already has at home,
-                        used to filter out those ingredients.
+            recipes_text (str): The recipes input text.
+            have_at_home (str | None): Items user already has.
 
         Returns:
-            str: Sanitized HTML containing categorized ingredients.
-
+            dict: The cleaned and normalized input texts.
         """
-        self._validate_recipes_text(recipes_text)
-        cleaned_recipes_text = "\n".join(
+        cleaned_recipes = "\n".join(
             line.strip() for line in recipes_text.splitlines() if line.strip()
         )
-        parsed_data = self._parse_input_to_list(cleaned_recipes_text)
-
-        if not parsed_data:
-            raise ValueError("No valid recipes or ingredients found in the input.")
-
-        try:
-            # TODO: don't like mixing DB and LLM logic
-            # TODO: move supabase query to a separate file/method
-            supabase.table("weekly").delete().gt("position", -1).execute()
-            self._add_meals_with_day_pairing(parsed_data)
-
-            ingredients_text = "\n\n".join(item["ingredients"] for item in parsed_data)
-            prompt = self._create_ingredient_prompt(ingredients_text, have_at_home)
-
-            llm_start_time = time.time()
-            model_response: GenerateContentResponse = (
-                await CLIENT.aio.models.generate_content(
-                    model=LLM_MODEL,
-                    contents=prompt,
-                    config={"temperature": 0.2},
-                )
+        cleaned_have_at_home = (
+            "\n".join(
+                line.strip() for line in have_at_home.splitlines() if line.strip()
             )
-            llm_duration = time.time() - llm_start_time
+            if have_at_home is not None
+            else ""
+        )
+        return {"recipes": cleaned_recipes, "have_at_home": cleaned_have_at_home}
 
-            raw_response = self._extract_human_readable_response(model_response)
+    async def _generate_shopping_list(
+        self, client: genai.Client, parsed_recipes: list[dict], have_at_home: str
+    ) -> dict:
+        """Generate shopping list using Gemini API.
+        Args:
+            client (genai.Client): The Gemini API client.
+            parsed_recipes (list[dict]): The parsed recipe data.
+            have_at_home (str): The user's available ingredients.
+        Returns:
+            dict: The generated shopping list.
+        """
+        # 1. Extract ingredients from all recipes
+        ingredients_text = "\n\n".join(item["ingredients"] for item in parsed_recipes)
+
+        # 2. Create optimized prompt
+        prompt = self._create_ingredient_prompt(ingredients_text, have_at_home)
+
+        # 3. Call LLM with timing
+        llm_start_time = time.time()
+        model_response = await client.aio.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+            config={"temperature": 0.2},
+        )
+        llm_duration = time.time() - llm_start_time
+
+        # 4. Extract response content
+        content = self._extract_human_readable_response(model_response)
+
+        return {"content": content, "duration": llm_duration}
+
+    async def process_recipes(
+        self, recipes_text: str, have_at_home: str | None
+    ) -> dict:
+        """
+        Extract and categorize ingredients from recipes text using Gemini API.
+
+        Args:
+            recipes_text (str): Recipes input text.
+            have_at_home (str | None): Items user already has.
+
+        Returns:
+            dict: Envelope with status and data or error.
+        """
+        try:
+            # Step 1: Initialize dependencies
+            client = self._initialize_llm_client()
+            cleaner = self._initialize_html_cleaner()
+
+            # Step 2: Clear existing data and prepare inputs
+            self.ingredients_repository.delete_all_weekly()
+            cleaned_inputs = self._clean_input_texts(recipes_text, have_at_home)
+
+            # Step 3: Parse and store recipe data
+            parsed_recipes = self._parse_input_to_list(cleaned_inputs["recipes"])
+            self._add_meals_with_day_pairing(parsed_recipes)
+
+            # Step 4: Generate shopping list via LLM
+            llm_response = await self._generate_shopping_list(
+                client, parsed_recipes, cleaned_inputs["have_at_home"]
+            )
+
+            # Step 5: Clean and return response
+            cleaned_html = cleaner.clean(llm_response["content"])
 
             return {
-                "processed_data": CLEANER.clean(raw_response),
-                "llm_time": llm_duration,
+                "status": "success",
+                "data": {
+                    "ingredients_content": cleaned_html,
+                    "llm_time": llm_response["duration"],
+                },
             }
-        except Exception as e:
-            raise RecipeProcessingError(f"Error processing recipes: {e!s}", e) from e
+
+        except Exception as exc:
+            logging.exception("Failed to process recipes: %s", exc)
+            return {
+                "status": "error",
+                "error": {
+                    "code": ErrorCode.Ingredients.PROCESSING_ERROR,
+                    "message": "An error occurred while processing the recipes. Please try again.",
+                    "details": {"error_type": type(exc).__name__},
+                },
+            }
+
+    async def handle_ingredients_request(
+        self, ingredients_request: IngredientsRequest
+    ) -> tuple[dict, int]:
+        """
+        Format business logic and response for /ingredients API route.
+
+        Args:
+            ingredients_request (IngredientsRequest): Request body.
+
+        Returns:
+            tuple[dict, int]: Envelope with status and HTTP status code.
+        """
+        result = await self.process_recipes(
+            ingredients_request.recipes_text,
+            ingredients_request.have_at_home,
+        )
+
+        # TODO: WTH is this?
+        if result.get("status") == "error":
+            error_code = result.get("error", {}).get("code", "")
+            if error_code == ErrorCode.Ingredients.DB_ERROR:
+                status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            else:
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        else:
+            status_code = status.HTTP_200_OK
+
+        return result, status_code

@@ -11,6 +11,8 @@ wheels/
 test.txt
 llm_latency.py
 .DS_Store
+testing-scenario.md
+refactor.txt
 
 # Virtual environments
 .venv

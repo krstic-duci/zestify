@@ -25,6 +25,7 @@ class AuthService:
         create_auth_cookie(username): Create and set a signed authentication cookie.
         create_error_response(error_message): Redirect to login with an error message.
     """
+
     def _check_password(self, plain_password: str) -> bool:
         """Check if the provided plain password matches the stored hashed password.
 
@@ -33,7 +34,6 @@ class AuthService:
 
         Returns:
             bool: True if the password is valid, False otherwise.
-
         """
         return pwd_context.verify(plain_password, SETTINGS.app_password)
 
@@ -44,7 +44,6 @@ class AuthService:
             username (str): The username to check.
         Returns:
             bool: True if the username matches, False otherwise.
-
         """
         return username == SETTINGS.app_username
 
@@ -57,7 +56,6 @@ class AuthService:
 
         Returns:
             bool: True if the credentials are valid, False otherwise.
-
         """
         return self._check_username(username) and self._check_password(password)
 
@@ -69,7 +67,6 @@ class AuthService:
 
         Returns:
             RedirectResponse: A response object with the auth cookie set.
-
         """
         signed_token = serializer.dumps({"username": username})
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -92,7 +89,6 @@ class AuthService:
         Returns:
             RedirectResponse: A response object redirecting to the login page with the
             error.
-
         """
         return RedirectResponse(
             url=f"/login?error={error_message}",
