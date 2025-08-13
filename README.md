@@ -6,7 +6,7 @@
 
 ## Overview
 
-Zestify is a personal web application that helps me and my family with aggregate and categorize ingredients from multiple recipes. Simply paste your recipe text, and the app will extract, translate (to Swedish), and organize ingredients by category using Google's Gemini AI.
+Zestify is a personal web application that helps aggregate and categorize ingredients from multiple recipes. Paste your recipe text, and the app will extract, translate (to Swedish), and organize ingredients by category using Google's Gemini AI. It also supports weekly meal planning with drag-and-drop reordering.
 
 ## Features
 
@@ -17,16 +17,20 @@ Zestify is a personal web application that helps me and my family with aggregate
 - ⚡ **Rate Limiting**: Built-in protection against abuse
 - 🎨 **Dark Theme UI**: Clean, modern interface with responsive design
 - 🧹 **HTML Sanitization**: Secure output with proper content filtering
+- 📅 **Weekly Meal Planner**: Drag-and-drop meals for each day and meal type
+- 🛡️ **Comprehensive Error Handling**: Consistent error envelopes and user-friendly notifications
 
 ## Tech Stack
 
 - **Backend**: FastAPI 0.116+
 - **AI/ML**: Google Gemini 1.5 Flash
 - **Authentication**: Passlib (bcrypt) + itsdangerous
+- **Database**: Supabase (Postgres)
 - **Templates**: Jinja2
 - **Security**: Bleach HTML sanitization
-- **Rate Limiting**: Custom implementation (FastAPI dependencies)
+- **Rate Limiting**: Custom FastAPI dependencies
 - **Configuration**: Pydantic Settings
+- **Frontend**: Vanilla JS, Sortable.js for drag-and-drop
 - **Python**: 3.13+
 
 ## Project Structure
@@ -113,7 +117,8 @@ zestify/
 2. **Input Recipes**: Paste your recipe text into the textarea on the main page
 3. **Process**: Click "Process" to extract and categorize ingredients
 4. **Results**: View organized ingredients grouped by category in Swedish
-5. **Logout**: Use the logout link to end your session
+5. **Weekly Planner**: Go to `/weekly` to view and drag-and-drop meals for each day
+6. **Logout**: Use the logout link to end your session
 
 ## API Endpoints
 
@@ -121,6 +126,9 @@ zestify/
 - `GET /login` - Login form
 - `POST /login` - Authentication endpoint (rate limited: 5/minute)
 - `POST /ingredients` - Process recipes and return results
+- `GET /weekly` - Weekly meal planner page
+- `POST /swap-meals` - Swap two meals in the weekly plan
+- `POST /move-meal` - Move a meal to a specific position
 - `GET /logout` - Logout and clear session
 - `GET /static/*` - Static file serving
 
@@ -138,7 +146,7 @@ zestify/
 - **HTML Sanitization**: Bleach filtering for safe output
 - **Secure Cookies**: HttpOnly, Secure, SameSite=Strict
 - **Input Validation**: Pydantic form validation with length constraints
-- **Error Handling**: Comprehensive HTTP status code handling
+- **Error Handling**: Comprehensive HTTP status code handling and error envelopes
 
 ## Configuration
 
@@ -147,6 +155,8 @@ Key configuration options in `utils/config.py`:
 - `GEMINI_API_KEY`: Google Gemini API access
 - `APP_USERNAME`/`APP_PASSWORD`: Authentication credentials
 - `AUTH_TOKEN_KEY`: Token signing secret
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
 - `MAX_AGE`: Session timeout (default: 24 hours)
 
 ## Development
