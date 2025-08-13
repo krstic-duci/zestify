@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }, duration);
     }
 
+    // TODO: this never goes away
     // Auto-format on paste
     textarea.addEventListener('paste', function (e) {
         setTimeout(() => {

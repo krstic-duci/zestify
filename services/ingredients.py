@@ -117,7 +117,12 @@ class IngredientService:
             list[dict[str, str]]: List of dicts with 'url' and 'ingredients'.
         """
         # Split the input into sections based on "# URL"
-        sections = input_text.split("\n# ")
+        sections = [s for s in input_text.split("\n# ") if s.strip()]
+        # TODO: magic number
+        if len(sections) != 7:
+            raise ValueError(
+                f"Expected 7 recipes (sections starting with '#'), but got {len(sections)}."
+            )
 
         parsed_data = []
         for section in sections:
@@ -307,6 +312,17 @@ class IngredientService:
                     "llm_time": llm_response["duration"],
                 },
             }
+        except ValueError as ve:
+            # Business logic error (e.g., wrong recipe count)
+            logging.exception("Recipe number error: %s", ve)
+            return {
+                "status": "error",
+                "error": {
+                    "code": ErrorCode.Ingredients.PROCESSING_ERROR,
+                    "message": str(ve),
+                    "details": {"error_type": type(ve).__name__},
+                },
+            }
 
         except Exception as exc:
             logging.exception("Failed to process recipes: %s", exc)
@@ -315,7 +331,10 @@ class IngredientService:
                 "error": {
                     "code": ErrorCode.Ingredients.PROCESSING_ERROR,
                     "message": "An error occurred while processing the recipes. Please try again.",
-                    "details": {"error_type": type(exc).__name__},
+                    "details": {
+                        "error_type": type(exc).__name__,
+                        "error_message": str(exc),
+                    },
                 },
             }
 
